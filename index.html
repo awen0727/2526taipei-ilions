@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>群愛獅子會電子簽到系統 V1.0</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; text-align: center; padding: 20px; background-color: #f8f9fa; color: #333; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; border-top: 6px solid #C5960C; } /* 獅子會金 */
+        
+        h2 { color: #C5960C; margin-bottom: 5px; font-weight: 800; font-size: 1.4rem; }
+        .sub-title { color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+        
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #C5960C; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #msg { margin-top: 20px; font-size: 18px; font-weight: bold; line-height: 1.6; white-space: pre-line; color: #2c3e50; }
+        
+        .input-group { margin: 25px 0; text-align: left; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
+        input[type="text"]:focus { border-color: #C5960C; }
+        
+        .btn { display: inline-block; background-color: #C5960C; color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; margin-top: 10px; cursor: pointer; font-size: 18px; border: none; width: 100%; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.15); transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
+        
+        #profileImg { width: 90px; height: 90px; border-radius: 50%; border: 4px solid #C5960C; margin-bottom: 15px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>群愛獅子會電子簽到系統 V1.0</h2>
+        <div class="sub-title">例會出席登記</div>
+        
+        <div id="content">
+            <img id="profileImg" src="" alt="Profile">
+            <p id="welcomeLine">讀取資料中...</p>
+            
+            <div class="input-group">
+                <label for="guestInput">👥 攜帶親友備註 (選填)</label>
+                <input type="text" id="guestInput" placeholder="例如：帶一位新朋友">
+            </div>
+            
+            <button id="checkInBtn" class="btn" onclick="startCheckIn()">確認簽到</button>
+        </div>
+
+        <div id="loader" class="loader"></div>
+        <div id="msg"></div>
+        <button onclick="window.location.reload()" id="retryBtn" class="btn" style="display:none; background-color:#555;">重新整理</button>
+    </div>
+
+    <script>
+        // ★★★ 請替換成您的 GAS 網址 ★★★
+        const GAS_API_URL = "https://script.google.com/macros/s/您的GAS網址/exec"; 
+        
+        // ★★★ 請替換成您的 LIFF ID ★★★
+        const liffId = "您的LIFF_ID";
+
+        let userProfile = null;
+
+        async function main() {
+            try {
+                await liff.init({ liffId: liffId });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                userProfile = await liff.getProfile();
+                
+                // 顯示頭像
+                if(userProfile.pictureUrl) {
+                    document.getElementById("profileImg").src = userProfile.pictureUrl;
+                    document.getElementById("profileImg").style.display = "inline-block";
+                }
+                // 掃碼當下還未比對資料庫，先顯示 Line 暱稱
+                document.getElementById("welcomeLine").innerText = `你好，${userProfile.displayName}`;
+                
+            } catch (err) {
+                document.getElementById("welcomeLine").innerText = "系統初始化失敗 (請在LINE開啟)";
+            }
+        }
+
+        function startCheckIn() {
+            if (!userProfile) return;
+            
+            document.getElementById("content").style.display = "none";
+            document.getElementById("loader").style.display = "block";
+            document.getElementById("msg").innerText = "正在連線資料庫...";
+
+            const guestNote = document.getElementById("guestInput").value;
+            
+            const postData = JSON.stringify({
+                displayName: userProfile.displayName,
+                guestInfo: guestNote
+            });
+
+            fetch(GAS_API_URL, {
+                method: "POST",
+                body: postData,
+                headers: { "Content-Type": "text/plain" }
+            })
+            .then(res => res.text())
+            .then(text => {
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("msg").innerText = text;
+                // 若成功顯示金色，錯誤顯示紅色
+                if(text.includes("成功")) {
+                    document.getElementById("msg").style.color = "#C5960C";
+                } else if(text.includes("重複")) {
+                    document.getElementById("msg").style.color = "#2c3e50";
+                } else {
+                    document.getElementById("msg").style.color = "red";
+                }
+            })
+            .catch(err => {
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("msg").innerText = "連線失敗，請檢查網路狀況";
+                document.getElementById("retryBtn").style.display = "inline-block";
+            });
+        }
+        main();
+    </script>
+</body>
+</html>
