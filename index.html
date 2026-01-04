@@ -52,11 +52,11 @@
     </div>
 
     <script>
-        // ★★★ 請替換成您的 GAS 網址 ★★★
-        const GAS_API_URL = "https://script.google.com/macros/s/您的GAS網址/exec"; 
+        // ★★★ 這裡已經填入您的正確網址 ★★★
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyPT4Joi9U2kQisNsWEb-odpD-mifTcs1h44h60-fdwWh-ulh2l8bGHnXmtWn9Gy76Y/exec"; 
         
-        // ★★★ 請替換成您的 LIFF ID ★★★
-        const liffId = "您的LIFF_ID";
+        // ★★★ 這裡已經填入您的正確 ID ★★★
+        const liffId = "2008815660-Yp9J8fmo";
 
         let userProfile = null;
 
@@ -69,12 +69,10 @@
                 }
                 userProfile = await liff.getProfile();
                 
-                // 顯示頭像
                 if(userProfile.pictureUrl) {
                     document.getElementById("profileImg").src = userProfile.pictureUrl;
                     document.getElementById("profileImg").style.display = "inline-block";
                 }
-                // 掃碼當下還未比對資料庫，先顯示 Line 暱稱
                 document.getElementById("welcomeLine").innerText = `你好，${userProfile.displayName}`;
                 
             } catch (err) {
@@ -105,7 +103,7 @@
             .then(text => {
                 document.getElementById("loader").style.display = "none";
                 document.getElementById("msg").innerText = text;
-                // 若成功顯示金色，錯誤顯示紅色
+                
                 if(text.includes("成功")) {
                     document.getElementById("msg").style.color = "#C5960C";
                 } else if(text.includes("重複")) {
