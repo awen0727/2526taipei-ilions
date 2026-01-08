@@ -2,41 +2,115 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>群愛獅子會 - 即時出席狀況</title>
+    <title>群愛獅子會 - 即時出席狀況 (直式版)</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #222; color: white; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
+        /* 設定網頁基本樣式 */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #222; 
+            color: white; 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            overflow-x: hidden; /* 禁止左右捲動 */
+            overflow-y: hidden; /* 禁止整頁捲動，只讓內容捲動 */
+            height: 100vh;
+            width: 100vw;
+        }
         
-        /* 上方標題區 */
-        .header { background: linear-gradient(90deg, #b48811 0%, #fbd050 50%, #b48811 100%); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); height: 12vh; box-sizing: border-box; }
-        .title { font-size: 4vh; font-weight: 900; color: #4a3403; text-shadow: 1px 1px 0px rgba(255,255,255,0.4); }
+        /* 上方標題區：改為直式堆疊 (Column) */
+        .header { 
+            background: linear-gradient(180deg, #b48811 0%, #fbd050 100%); 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; /* 關鍵：變成直式排列 */
+            justify-content: center; 
+            align-items: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+            height: 180px; /* 固定高度給標題區 */
+            box-sizing: border-box; 
+        }
         
-        /* 右上角計數器 */
-        .counter-box { background-color: #fff; padding: 10px 30px; border-radius: 10px; color: #b48811; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        .count-label { font-size: 1.5vh; font-weight: bold; color: #555; }
-        .count-number { font-size: 5vh; font-weight: 800; line-height: 1; }
+        .title { 
+            font-size: 32px; /* 調整字體大小適應 500px */
+            font-weight: 900; 
+            color: #4a3403; 
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.4); 
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        /* 計數器 */
+        .counter-box { 
+            background-color: #fff; 
+            padding: 5px 40px; 
+            border-radius: 30px; 
+            color: #b48811; 
+            text-align: center; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); 
+            width: 80%; /* 寬度佔滿一點 */
+        }
+        .count-label { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 2px;}
+        .count-number { font-size: 40px; font-weight: 800; line-height: 1; }
         
         /* 下方名單區 */
-        .content { height: 88vh; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding-bottom: 50px; }
+        .content { 
+            height: calc(100vh - 180px); /* 剩下的高度都給它 */
+            padding: 15px; 
+            box-sizing: border-box; 
+            overflow-y: auto; /* 內容過多時可滑動 */
+        }
         
-        /* 名片卡 */
-        .card { background-color: #333; border: 2px solid #555; border-radius: 10px; padding: 15px; text-align: center; transition: 0.3s; position: relative; overflow: hidden; }
+        /* 網格系統：強制單欄 (1fr) */
+        .grid-container { 
+            display: grid; 
+            grid-template-columns: 1fr; /* 關鍵：強制一欄 */
+            gap: 15px; 
+            padding-bottom: 50px; 
+        }
+        
+        /* 名片卡樣式優化 */
+        .card { 
+            background-color: #333; 
+            border: 1px solid #555; 
+            border-left: 6px solid #fbd050; /* 左側金色條紋 */
+            border-radius: 8px; 
+            padding: 12px 20px; 
+            text-align: left; /* 改為靠左對齊比較好看 */
+            transition: 0.3s; 
+            position: relative; 
+            overflow: hidden; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
         .card.new-arrival { border-color: #fbd050; animation: flash 2s infinite; background-color: #443c22; }
         
-        .card-job { font-size: 0.9rem; color: #fbd050; margin-bottom: 5px; font-weight: bold; }
-        .card-name { font-size: 1.8rem; font-weight: bold; color: #fff; margin-bottom: 5px; }
-        .card-note { font-size: 0.8rem; color: #aaa; background: rgba(255,255,255,0.1); display: inline-block; padding: 2px 8px; border-radius: 4px; }
+        /* 讓名字和職稱包在一個區塊 */
+        .info-group { display: flex; flex-direction: column; }
+        
+        .card-job { font-size: 14px; color: #fbd050; margin-bottom: 4px; font-weight: bold; }
+        .card-name { font-size: 28px; font-weight: bold; color: #fff; }
+        
+        .card-note { 
+            font-size: 14px; 
+            color: #222; 
+            background: #fbd050; /* 備註改用醒目的顏色 */
+            padding: 4px 10px; 
+            border-radius: 15px; 
+            font-weight: bold;
+        }
         
         @keyframes flash { 0% { box-shadow: 0 0 5px #fbd050; } 50% { box-shadow: 0 0 20px #fbd050; } 100% { box-shadow: 0 0 5px #fbd050; } }
 
         /* 讀取中 */
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #888; font-size: 1.5rem; }
+        #loading { position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); color: #888; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="title">🦁 群愛獅子會 例會出席名單</div>
+        <div class="title">🦁 群愛獅子會<br>例會出席名單</div>
         <div class="counter-box">
             <div class="count-label">目前出席</div>
             <div class="count-number" id="totalCount">0</div>
@@ -50,7 +124,7 @@
     </div>
 
     <script>
-        // ★★★ 請填入您的 GAS 網址 ★★★
+        // ★★★ 這裡保留您的 GAS 網址 ★★★
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyPT4Joi9U2kQisNsWEb-odpD-mifTcs1h44h60-fdwWh-ulh2l8bGHnXmtWn9Gy76Y/exec";
         
         // 設定每 5 秒更新一次
@@ -74,7 +148,6 @@
             
             // 更新數字
             const countElem = document.getElementById("totalCount");
-            // 如果人數變多，做個簡單特效
             if (data.count > previousCount) {
                 countElem.style.color = "red";
                 setTimeout(() => countElem.style.color = "#b48811", 500);
@@ -86,21 +159,22 @@
             const grid = document.getElementById("grid");
             grid.innerHTML = ""; // 清空舊的
 
-            // 倒序排列 (最新的在最前面)
-            // 原始資料通常是按照表格順序，若想讓最新的顯示在最前面，可自行決定
-            // 這裡維持表格順序，或者您可以 array.reverse()
+            // 保持原本的排序 (或加上 .reverse() 讓最新的在最上面)
+            // 這裡我加上了 .reverse() 讓剛簽到的人出現在最上方，比較適合直立螢幕查看
+            const list = data.list.slice().reverse();
             
-            data.list.forEach(person => {
+            list.forEach(person => {
                 const card = document.createElement("div");
                 card.className = "card";
                 
-                // 這裡判斷：如果是職稱很高的人，可以加特別樣式 (此處省略)
-                
-                let html = `<div class="card-job">${person.job}</div>
-                            <div class="card-name">${person.name}</div>`;
+                // 結構微調：左邊放資料，右邊放備註
+                let html = `<div class="info-group">
+                                <div class="card-job">${person.job}</div>
+                                <div class="card-name">${person.name}</div>
+                            </div>`;
                 
                 if (person.note) {
-                    html += `<div class="card-note">親友: ${person.note}</div>`;
+                    html += `<div class="card-note">${person.note}</div>`;
                 }
 
                 card.innerHTML = html;
