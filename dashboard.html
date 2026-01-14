@@ -2,9 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>群愛獅子會 - 例會簽到表 (V6.9 自動換行版)</title>
+    <title>群愛獅子會 - 戰情室 (V7.0 救場修復版)</title>
     <style>
-        /* --- V6.9 針對 600px 寬度：啟用自動換行，確保名字完整 --- */
+        /* --- V7.0 回歸穩定架構 + 安全換行 --- */
         
         body { 
             margin: 0; padding: 0; 
@@ -29,14 +29,41 @@
         
         /* 左邊標題 */
         .title-group { display: flex; flex-direction: column; justify-content: center; }
-        .title-main { font-size: 2.1rem; font-weight: 900; color: #4a3403; letter-spacing: 0px; line-height: 1.1; text-shadow: 1px 1px 0px rgba(255,255,255,0.3); }
-        .title-sub { font-size: 0.85rem; font-weight: 800; color: #6d4c05; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+        .title-main { 
+            font-size: 2.1rem; 
+            font-weight: 900; 
+            color: #4a3403; 
+            letter-spacing: 0px; 
+            line-height: 1.1;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.3);
+        }
+        .title-sub { 
+            font-size: 0.85rem; 
+            font-weight: 800; 
+            color: #6d4c05; 
+            letter-spacing: 1px; 
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
         
         /* 右邊統計區塊 */
         .stats-group { display: flex; gap: 6px; }
-        .counter-box { background-color: #fff; padding: 4px 8px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px; }
+
+        .counter-box { 
+            background-color: #fff; 
+            padding: 4px 8px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px; 
+        }
+        
         .count-label { font-size: 0.75rem; font-weight: bold; color: #888; margin-bottom: -2px;}
         .count-number { font-size: 2.2rem; font-weight: 900; line-height: 1; font-family: Impact, sans-serif; }
+        
         #memberCount { color: #d32f2f; }
         #guestCount { color: #1565c0; }
         
@@ -49,9 +76,175 @@
             grid-template-columns: 1fr 1fr; 
             gap: 10px; 
             padding-bottom: 80px; 
-            align-items: start; /* 讓卡片靠上對齊，避免因高度不同而跑版 */
+            /* 讓卡片高度自動延展 */
+            align-items: start;
         }
         
-        /* 名片卡 - 允許高度自動撐開 */
+        /* 名片卡 */
         .card { 
-            background: linear-gradient(
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%); 
+            border-left: 8px solid #fbd050; 
+            border-radius: 8px; 
+            padding: 12px 8px; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            min-height: 95px; /* 保持最小高度 */
+            height: auto;     /* 允許隨文字變高 */
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+        
+        .card.is-guest { border-left-color: #42a5f5; }
+        .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.5); border-left-color: #fff; }
+        
+        /* 職稱 */
+        .card-job { 
+            font-size: 1.3rem; 
+            color: #fbd050; 
+            font-weight: 800; 
+            margin-bottom: 2px; 
+            letter-spacing: 0px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            /* 職稱保持單行，若太長則縮略 */
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .card.is-guest .card-job { color: #42a5f5; }
+        
+        /* ★★★ 名字調整：安全換行模式 ★★★ */
+        .card-name { 
+            font-size: 1.9rem; /* 字體設為 1.9，平衡大小與換行 */
+            font-weight: 900; 
+            color: #fff; 
+            line-height: 1.1; /* 行距拉近一點 */
+            
+            /* 允許換行設定 */
+            white-space: normal; 
+            word-break: break-word; 
+            
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        } 
+        
+        .card-note-container { position: absolute; top: 5px; right: 5px; }
+        .card-note { font-size: 0.7rem; color: #222; background: #fbd050; padding: 2px 6px; border-radius: 8px; font-weight: bold; }
+        
+        @keyframes flash { 0% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } 50% { border-left-color: #ffffff; box-shadow: 0 0 20px #fbd050; } 100% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } }
+        
+        #loading { text-align: center; color: #aaa; margin-top: 50px; font-size: 1.2rem; grid-column: span 2; }
+        
+        /* 隱藏捲軸 */
+        .content::-webkit-scrollbar { width: 0px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-group">
+            <div class="title-main">🦁 群愛獅子會</div>
+            <div class="title-sub">GATHERING CHECK-IN</div>
+        </div>
+        
+        <div class="stats-group">
+            <div class="counter-box">
+                <div class="count-label">會員</div>
+                <div class="count-number" id="memberCount">0</div>
+            </div>
+            <div class="counter-box">
+                <div class="count-label">來賓</div>
+                <div class="count-number" id="guestCount">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="loading">連線資料庫中...</div>
+        <div class="grid-container" id="grid">
+            </div>
+    </div>
+
+    <script>
+        // ★★★ 程式碼邏輯展開，確保穩定性 ★★★
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyPT4Joi9U2kQisNsWEb-odpD-mifTcs1h44h60-fdwWh-ulh2l8bGHnXmtWn9Gy76Y/exec";
+        
+        setInterval(fetchData, 5000);
+        fetchData(); 
+
+        let prevMemberCount = 0;
+        let prevGuestCount = 0;
+
+        function fetchData() {
+            fetch(GAS_URL + "?action=getDashboard")
+            .then(res => res.json())
+            .then(data => {
+                render(data);
+            })
+            .catch(err => {
+                console.error("更新失敗", err);
+                // 失敗時保持靜默
+            });
+        }
+
+        function render(data) {
+            document.getElementById("loading").style.display = "none";
+            
+            let memberCount = 0;
+            let guestCount = 0;
+
+            // 計算分類
+            data.list.forEach(person => {
+                if (person.job.includes("來賓") || person.job.includes("貴賓")) {
+                    guestCount++;
+                } else {
+                    memberCount++;
+                }
+            });
+
+            // 更新會員數
+            const mElem = document.getElementById("memberCount");
+            mElem.innerText = memberCount;
+            if (memberCount > prevMemberCount) {
+                mElem.style.color = "#ffff00"; 
+                setTimeout(() => mElem.style.color = "#d32f2f", 500); 
+            }
+            prevMemberCount = memberCount;
+
+            // 更新來賓數
+            const gElem = document.getElementById("guestCount");
+            gElem.innerText = guestCount;
+            if (guestCount > prevGuestCount) {
+                gElem.style.color = "#ffff00"; 
+                setTimeout(() => gElem.style.color = "#1565c0", 500); 
+            }
+            prevGuestCount = guestCount;
+
+            // 更新名單
+            const grid = document.getElementById("grid");
+            grid.innerHTML = ""; 
+
+            const reversedList = data.list.slice().reverse();
+
+            reversedList.forEach(person => {
+                const card = document.createElement("div");
+                card.className = "card";
+                
+                if (person.job.includes("來賓") || person.job.includes("貴賓")) {
+                    card.classList.add("is-guest");
+                }
+
+                let html = `
+                    <div class="info-group">
+                        <div class="card-job">${person.job}</div>
+                        <div class="card-name">${person.name}</div>
+                    </div>`;
+                
+                if (person.note) {
+                    html += `<div class="card-note-container"><span class="card-note">${person.note}</span></div>`;
+                }
+
+                card.innerHTML = html;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
