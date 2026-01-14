@@ -2,48 +2,93 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>群愛獅子會 - 出席簽到簿</title>
+    <title>群愛獅子會 - 出席簽到簿 (V4)</title>
     <style>
-        /* --- 側邊欄專用優化樣式 --- */
+        /* --- V4 針對 OBS 800px 寬度優化樣式 --- */
         
-        /* 半透明背景，讓簡報底圖透出來 */
-        body { margin: 0; padding: 0; background-color: rgba(0,0,0,0.85); color: white; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
+        /* 背景：保持半透明黑，讓簡報微透 */
+        body { margin: 0; padding: 0; background-color: rgba(0,0,0,0.85); color: white; font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; overflow: hidden; }
         
-        /* 標題區縮小，節省空間 */
-        .header { background: linear-gradient(90deg, #b48811 0%, #fbd050 100%); padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-bottom: 2px solid #fff; }
-        .title { font-size: 1.2rem; font-weight: 900; color: #4a3403; margin-bottom: 8px; text-shadow: 0 1px 0 rgba(255,255,255,0.3); }
+        /* 1. 標題區：橫向排列，節省高度 */
+        .header { 
+            background: linear-gradient(90deg, #b48811 0%, #fbd050 100%); 
+            padding: 15px 30px; 
+            display: flex; 
+            flex-direction: row; /* 改成橫向，利用800px寬度 */
+            align-items: center; 
+            justify-content: space-between; 
+            height: auto; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6); 
+            border-bottom: 3px solid #fff; 
+        }
         
-        /* 右上角計數器 */
-        .counter-box { background-color: #fff; padding: 5px 15px; border-radius: 20px; color: #b48811; text-align: center; width: 80%; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
-        .count-label { font-size: 0.8rem; font-weight: bold; color: #555; display: inline-block; margin-right: 5px; vertical-align: middle;}
-        .count-number { font-size: 1.8rem; font-weight: 800; line-height: 1; display: inline-block; vertical-align: middle; color: #d32f2f; }
+        /* 標題靠左 */
+        .title { font-size: 2rem; font-weight: 900; color: #4a3403; letter-spacing: 2px; text-shadow: 1px 1px 0 rgba(255,255,255,0.4);}
         
-        /* 名單區 */
-        .content { height: 85vh; padding: 10px; box-sizing: border-box; overflow-y: auto; }
+        /* 2. 數字區：靠右，並且超級大 */
+        .counter-box { 
+            background-color: rgba(255,255,255,0.95); 
+            padding: 5px 25px; 
+            border-radius: 15px; 
+            color: #b48811; 
+            text-align: right; 
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); 
+            display: flex; 
+            align-items: center;
+        }
+        .count-label { font-size: 1.5rem; font-weight: bold; color: #555; margin-right: 15px;}
+        .count-number { font-size: 4.5rem; font-weight: 900; line-height: 1; color: #d32f2f; }
         
-        /* 強制單欄顯示 */
-        .grid-container { display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
+        /* 內容區設定 */
+        .content { height: 85vh; padding: 25px; box-sizing: border-box; overflow-y: auto; }
         
-        /* 名片卡優化：字體放大，適應窄螢幕 */
-        .card { background-color: rgba(255,255,255,0.1); border-left: 6px solid #fbd050; border-radius: 6px; padding: 12px 15px; text-align: left; position: relative; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s; }
-        .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.4); }
+        /* 3. 名單列表：間距拉大 */
+        .grid-container { display: flex; flex-direction: column; gap: 20px; padding-bottom: 80px; }
         
-        /* 名字與職稱 */
-        .info-group { display: flex; flex-direction: column; }
-        .card-job { font-size: 0.85rem; color: #fbd050; font-weight: bold; margin-bottom: 2px; }
-        .card-name { font-size: 1.6rem; font-weight: bold; color: #fff; line-height: 1.2; letter-spacing: 1px; } 
+        /* 4. 名片卡：寬度填滿 800px 空間 */
+        .card { 
+            background: linear-gradient(90deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%); 
+            border-left: 15px solid #fbd050; /* 左邊金條加粗 */
+            border-radius: 12px; 
+            padding: 20px 40px; /* 內部留白加大 */
+            text-align: left; 
+            position: relative; 
+            display: flex; 
+            align-items: center; /* 垂直置中 */
+            justify-content: space-between; /* 左右撐開 */
+            transition: all 0.3s; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4); 
+        }
         
-        /* 親友備註改小圓標 */
-        .card-note { font-size: 0.75rem; color: #222; background: #fbd050; padding: 3px 8px; border-radius: 10px; font-weight: bold; margin-left: 10px; white-space: nowrap; }
+        .card.new-arrival { animation: flashBig 2s infinite; background-color: rgba(180, 136, 17, 0.6); border-left-color: #fff; }
         
-        @keyframes flash { 0% { border-color: #fbd050; box-shadow: 0 0 5px #fbd050; } 50% { border-color: #fff; box-shadow: 0 0 15px #fbd050; } 100% { border-color: #fbd050; box-shadow: 0 0 5px #fbd050; } }
+        /* 名字與職稱群組 */
+        .info-group { display: flex; flex-direction: column; justify-content: center; }
         
-        #loading { text-align: center; color: #aaa; margin-top: 50px; font-size: 1.2rem; }
+        /* 職稱：清楚醒目 */
+        .card-job { font-size: 2rem; color: #fbd050; font-weight: bold; margin-bottom: 5px; letter-spacing: 2px;}
+        
+        /* 姓名：霸氣巨型字體 (利用 800px 寬度) */
+        .card-name { font-size: 4.5rem; font-weight: 900; color: #fff; line-height: 1.1; letter-spacing: 3px; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); } 
+        
+        /* 親友備註：移到右側，做成漂亮的標籤 */
+        .card-note-container { 
+            background: #fbd050; 
+            padding: 10px 20px; 
+            border-radius: 30px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transform: rotate(-2deg); /* 俏皮一點的歪斜設計 */
+        }
+        .card-note { font-size: 1.5rem; color: #222; font-weight: 800; }
+        
+        @keyframes flashBig { 0% { border-left-color: #fbd050; box-shadow: 0 0 10px #fbd050; } 50% { border-left-color: #ffffff; box-shadow: 0 0 40px #fbd050; transform: scale(1.02); } 100% { border-left-color: #fbd050; box-shadow: 0 0 10px #fbd050; } }
+        
+        #loading { text-align: center; color: #aaa; margin-top: 50px; font-size: 2rem; font-weight: bold;}
         
         /* 隱藏捲軸但保留功能 */
-        .content::-webkit-scrollbar { width: 6px; }
-        .content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
-        .content::-webkit-scrollbar-thumb { background: #fbd050; border-radius: 3px; }
+        .content::-webkit-scrollbar { width: 10px; }
+        .content::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .content::-webkit-scrollbar-thumb { background: #fbd050; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -51,7 +96,7 @@
     <div class="header">
         <div class="title">🦁 群愛獅子會</div>
         <div class="counter-box">
-            <div class="count-label">目前出席</div>
+            <div class="count-label">已出席</div>
             <div class="count-number" id="totalCount">0</div>
         </div>
     </div>
@@ -114,7 +159,7 @@
                     </div>`;
                 
                 if (person.note) {
-                    html += `<div class="card-note">${person.note}</div>`;
+                    html += `<div class="card-note-container"><span class="card-note">${person.note}</span></div>`;
                 }
 
                 card.innerHTML = html;
