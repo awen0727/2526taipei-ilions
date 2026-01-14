@@ -1,34 +1,126 @@
-<style>
-    /* 改成透明背景，讓 Keynote 的底圖透出來 (若需要黑底可改回 #222) */
-    body { margin: 0; padding: 0; background-color: rgba(0,0,0,0.6); color: white; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
-    
-    /* 標題區縮小，節省空間 */
-    .header { background: linear-gradient(90deg, #b48811 0%, #fbd050 100%); padding: 10px; display: flex; flex-direction: column; align-items: center; height: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-    .title { font-size: 1.2rem; font-weight: 900; color: #4a3403; margin-bottom: 5px; }
-    
-    /* 計數器強調 */
-    .counter-box { background-color: #fff; padding: 5px 20px; border-radius: 20px; color: #b48811; text-align: center; width: 80%; }
-    .count-label { font-size: 0.8rem; font-weight: bold; color: #555; display: inline-block; margin-right: 5px;}
-    .count-number { font-size: 2rem; font-weight: 800; line-height: 1; display: inline-block; vertical-align: middle;}
-    
-    /* 名單區 */
-    .content { height: 85vh; padding: 10px; box-sizing: border-box; overflow-y: auto; }
-    
-    /* 強制單欄顯示 (原本是自動多欄) */
-    .grid-container { display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
-    
-    /* 名片卡優化：字體放大，適應窄螢幕 */
-    .card { background-color: rgba(255,255,255,0.1); border-left: 5px solid #fbd050; border-radius: 5px; padding: 10px; text-align: left; position: relative; display: flex; align-items: center; justify-content: space-between;}
-    .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.3); }
-    
-    /* 名字與職稱 */
-    .info-group { display: flex; flex-direction: column; }
-    .card-job { font-size: 0.8rem; color: #fbd050; font-weight: bold; }
-    .card-name { font-size: 1.5rem; font-weight: bold; color: #fff; line-height: 1.2; } /* 名字加大 */
-    
-    /* 親友備註改小圓標 */
-    .card-note { font-size: 0.7rem; color: #222; background: #fbd050; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px;}
-    
-    @keyframes flash { 0% { border-color: #fbd050; } 50% { border-color: #fff; } 100% { border-color: #fbd050; } }
-    #loading { text-align: center; color: #aaa; margin-top: 20px;}
-</style>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>群愛獅子會 - 出席簽到簿</title>
+    <style>
+        /* --- 側邊欄專用優化樣式 --- */
+        
+        /* 半透明背景，讓簡報底圖透出來 */
+        body { margin: 0; padding: 0; background-color: rgba(0,0,0,0.85); color: white; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
+        
+        /* 標題區縮小，節省空間 */
+        .header { background: linear-gradient(90deg, #b48811 0%, #fbd050 100%); padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-bottom: 2px solid #fff; }
+        .title { font-size: 1.2rem; font-weight: 900; color: #4a3403; margin-bottom: 8px; text-shadow: 0 1px 0 rgba(255,255,255,0.3); }
+        
+        /* 右上角計數器 */
+        .counter-box { background-color: #fff; padding: 5px 15px; border-radius: 20px; color: #b48811; text-align: center; width: 80%; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+        .count-label { font-size: 0.8rem; font-weight: bold; color: #555; display: inline-block; margin-right: 5px; vertical-align: middle;}
+        .count-number { font-size: 1.8rem; font-weight: 800; line-height: 1; display: inline-block; vertical-align: middle; color: #d32f2f; }
+        
+        /* 名單區 */
+        .content { height: 85vh; padding: 10px; box-sizing: border-box; overflow-y: auto; }
+        
+        /* 強制單欄顯示 */
+        .grid-container { display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
+        
+        /* 名片卡優化：字體放大，適應窄螢幕 */
+        .card { background-color: rgba(255,255,255,0.1); border-left: 6px solid #fbd050; border-radius: 6px; padding: 12px 15px; text-align: left; position: relative; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s; }
+        .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.4); }
+        
+        /* 名字與職稱 */
+        .info-group { display: flex; flex-direction: column; }
+        .card-job { font-size: 0.85rem; color: #fbd050; font-weight: bold; margin-bottom: 2px; }
+        .card-name { font-size: 1.6rem; font-weight: bold; color: #fff; line-height: 1.2; letter-spacing: 1px; } 
+        
+        /* 親友備註改小圓標 */
+        .card-note { font-size: 0.75rem; color: #222; background: #fbd050; padding: 3px 8px; border-radius: 10px; font-weight: bold; margin-left: 10px; white-space: nowrap; }
+        
+        @keyframes flash { 0% { border-color: #fbd050; box-shadow: 0 0 5px #fbd050; } 50% { border-color: #fff; box-shadow: 0 0 15px #fbd050; } 100% { border-color: #fbd050; box-shadow: 0 0 5px #fbd050; } }
+        
+        #loading { text-align: center; color: #aaa; margin-top: 50px; font-size: 1.2rem; }
+        
+        /* 隱藏捲軸但保留功能 */
+        .content::-webkit-scrollbar { width: 6px; }
+        .content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        .content::-webkit-scrollbar-thumb { background: #fbd050; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">🦁 群愛獅子會</div>
+        <div class="counter-box">
+            <div class="count-label">目前出席</div>
+            <div class="count-number" id="totalCount">0</div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="loading">連線資料庫中...</div>
+        <div class="grid-container" id="grid">
+            </div>
+    </div>
+
+    <script>
+        // ★★★ 您的 GAS 網址 (維持不變) ★★★
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyPT4Joi9U2kQisNsWEb-odpD-mifTcs1h44h60-fdwWh-ulh2l8bGHnXmtWn9Gy76Y/exec";
+        
+        // 設定每 5 秒更新一次
+        setInterval(fetchData, 5000);
+        fetchData(); 
+
+        let previousCount = 0;
+
+        function fetchData() {
+            fetch(GAS_URL + "?action=getDashboard")
+            .then(res => res.json())
+            .then(data => {
+                render(data);
+            })
+            .catch(err => {
+                console.error("更新失敗", err);
+                document.getElementById("loading").innerText = "連線失敗，重試中...";
+            });
+        }
+
+        function render(data) {
+            document.getElementById("loading").style.display = "none";
+            
+            // 更新數字
+            const countElem = document.getElementById("totalCount");
+            if (data.count > previousCount) {
+                countElem.style.color = "#ffff00"; 
+                setTimeout(() => countElem.style.color = "#d32f2f", 500);
+            }
+            countElem.innerText = data.count;
+            previousCount = data.count;
+
+            // 更新名單
+            const grid = document.getElementById("grid");
+            grid.innerHTML = ""; 
+
+            // 反轉陣列，讓最新的在最上面
+            const reversedList = data.list.slice().reverse();
+
+            reversedList.forEach(person => {
+                const card = document.createElement("div");
+                card.className = "card";
+                
+                let html = `
+                    <div class="info-group">
+                        <div class="card-job">${person.job}</div>
+                        <div class="card-name">${person.name}</div>
+                    </div>`;
+                
+                if (person.note) {
+                    html += `<div class="card-note">${person.note}</div>`;
+                }
+
+                card.innerHTML = html;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
