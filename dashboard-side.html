@@ -1,124 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>  
-    <meta charset="UTF-8">
-    <title>群愛獅子會 - 即時出席狀況 (直式版)</title>
-    <style>
-        /* 設定網頁基本樣式 */
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background-color: #222; 
-            color: white; 
-            font-family: "Microsoft JhengHei", sans-serif; 
-            overflow-x: hidden; /* 禁止左右捲動 */
-            overflow-y: hidden; /* 禁止整頁捲動，只讓內容捲動 */
-            height: 100vh;
-            width: 100vw;
-        }
-        
-        /* 上方標題區：改為直式堆疊 (Column) */
-        .header { 
-            background: linear-gradient(180deg, #b48811 0%, #fbd050 100%); 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; /* 關鍵：變成直式排列 */
-            justify-content: center; 
-            align-items: center; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-            height: 180px; /* 固定高度給標題區 */
-            box-sizing: border-box; 
-        }
-        
-        .title { 
-            font-size: 32px; /* 調整字體大小適應 500px */
-            font-weight: 900; 
-            color: #4a3403; 
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.4); 
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        /* 計數器 */
-        .counter-box { 
-            background-color: #fff; 
-            padding: 5px 40px; 
-            border-radius: 30px; 
-            color: #b48811; 
-            text-align: center; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3); 
-            width: 80%; /* 寬度佔滿一點 */
-        }
-        .count-label { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 2px;}
-        .count-number { font-size: 40px; font-weight: 800; line-height: 1; }
-        
-        /* 下方名單區 */
-        .content { 
-            height: calc(100vh - 180px); /* 剩下的高度都給它 */
-            padding: 15px; 
-            box-sizing: border-box; 
-            overflow-y: auto; /* 內容過多時可滑動 */
-        }
-        
-        /* 網格系統：強制單欄 (1fr) */
-        .grid-container { 
-            display: grid; 
-            grid-template-columns: 1fr; /* 關鍵：強制一欄 */
-            gap: 15px; 
-            padding-bottom: 50px; 
-        }
-        
-        /* 名片卡樣式優化 */
-        .card { 
-            background-color: #333; 
-            border: 1px solid #555; 
-            border-left: 6px solid #fbd050; /* 左側金色條紋 */
-            border-radius: 8px; 
-            padding: 12px 20px; 
-            text-align: left; /* 改為靠左對齊比較好看 */
-            transition: 0.3s; 
-            position: relative; 
-            overflow: hidden; 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .card.new-arrival { border-color: #fbd050; animation: flash 2s infinite; background-color: #443c22; }
-        
-        /* 讓名字和職稱包在一個區塊 */
-        .info-group { display: flex; flex-direction: column; }
-        
-        .card-job { font-size: 14px; color: #fbd050; margin-bottom: 4px; font-weight: bold; }
-        .card-name { font-size: 28px; font-weight: bold; color: #fff; }
-        
-        .card-note { 
-            font-size: 14px; 
-            color: #222; 
-            background: #fbd050; /* 備註改用醒目的顏色 */
-            padding: 4px 10px; 
-            border-radius: 15px; 
-            font-weight: bold;
-        }
-        
-        @keyframes flash { 0% { box-shadow: 0 0 5px #fbd050; } 50% { box-shadow: 0 0 20px #fbd050; } 100% { box-shadow: 0 0 5px #fbd050; } }
-
-        /* 讀取中 */
-        #loading { position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); color: #888; font-size: 1.2rem; }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <div class="title">🦁 群愛獅子會<br>例會出席名單</div>
-        <div class="counter-box">
-            <div class="count-label">目前出席</div>
-            <div class="count-number" id="totalCount">0</div>
-        </div>
-    </div>
-
-    <div class="content">
-        <div id="loading">載入資料中...</div>
-        <div class="grid-container" id="grid">
-            </div>
-    </div>
+<style>
+    /* 改成透明背景，讓 Keynote 的底圖透出來 (若需要黑底可改回 #222) */
+    body { margin: 0; padding: 0; background-color: rgba(0,0,0,0.6); color: white; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
+    
+    /* 標題區縮小，節省空間 */
+    .header { background: linear-gradient(90deg, #b48811 0%, #fbd050 100%); padding: 10px; display: flex; flex-direction: column; align-items: center; height: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+    .title { font-size: 1.2rem; font-weight: 900; color: #4a3403; margin-bottom: 5px; }
+    
+    /* 計數器強調 */
+    .counter-box { background-color: #fff; padding: 5px 20px; border-radius: 20px; color: #b48811; text-align: center; width: 80%; }
+    .count-label { font-size: 0.8rem; font-weight: bold; color: #555; display: inline-block; margin-right: 5px;}
+    .count-number { font-size: 2rem; font-weight: 800; line-height: 1; display: inline-block; vertical-align: middle;}
+    
+    /* 名單區 */
+    .content { height: 85vh; padding: 10px; box-sizing: border-box; overflow-y: auto; }
+    
+    /* 強制單欄顯示 (原本是自動多欄) */
+    .grid-container { display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
+    
+    /* 名片卡優化：字體放大，適應窄螢幕 */
+    .card { background-color: rgba(255,255,255,0.1); border-left: 5px solid #fbd050; border-radius: 5px; padding: 10px; text-align: left; position: relative; display: flex; align-items: center; justify-content: space-between;}
+    .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.3); }
+    
+    /* 名字與職稱 */
+    .info-group { display: flex; flex-direction: column; }
+    .card-job { font-size: 0.8rem; color: #fbd050; font-weight: bold; }
+    .card-name { font-size: 1.5rem; font-weight: bold; color: #fff; line-height: 1.2; } /* 名字加大 */
+    
+    /* 親友備註改小圓標 */
+    .card-note { font-size: 0.7rem; color: #222; background: #fbd050; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px;}
+    
+    @keyframes flash { 0% { border-color: #fbd050; } 50% { border-color: #fff; } 100% { border-color: #fbd050; } }
+    #loading { text-align: center; color: #aaa; margin-top: 20px;}
+</style>
