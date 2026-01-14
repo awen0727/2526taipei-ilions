@@ -2,11 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>群愛獅子會 - 出席簽到簿 (V6精修版)</title>
+    <title>群愛獅子會 - 出席簽到簿 (V7分流版)</title>
     <style>
-        /* --- V6 精修調整版 --- */
+        /* --- V7 分流版樣式 --- */
         
-        /* 1. 字型補強：加入 Emoji 支援，解決名字出現 [] 方塊的問題 */
         body { 
             margin: 0; padding: 0; 
             background-color: rgba(0,0,0,0.85); 
@@ -15,25 +14,24 @@
             overflow: hidden; 
         }
         
-        /* 2. 標題區：重新分配比例 */
+        /* 標題區 */
         .header { 
             background: linear-gradient(90deg, #b48811 0%, #fbd050 100%); 
             padding: 10px 25px; 
             display: flex; 
             align-items: center; 
-            justify-content: space-between; /* 左右分開 */
+            justify-content: space-between; 
             height: auto;
-            min-height: 80px; /* 確保有足夠高度 */
+            min-height: 80px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.6); 
             border-bottom: 3px solid #fff; 
+            z-index: 10;
         }
         
-        /* 左邊標題文字：稍微縮小，把焦點讓給數字 */
         .title-group { display: flex; flex-direction: column; }
         .title-main { font-size: 1.6rem; font-weight: 900; color: #4a3403; letter-spacing: 1px; line-height: 1.2;}
         .title-sub { font-size: 0.9rem; font-weight: bold; color: #6d4c05; letter-spacing: 2px; text-transform: uppercase;}
         
-        /* 右邊計數器：特大化 */
         .counter-box { 
             background-color: #fff; 
             padding: 5px 20px; 
@@ -43,42 +41,62 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-width: 100px; /* 固定最小寬度，看起來更穩 */
+            min-width: 100px;
         }
         .count-label { font-size: 0.9rem; font-weight: bold; color: #888; margin-bottom: -5px;}
-        /* ★ 數字調整：超大且粗 */
         .count-number { font-size: 3.5rem; font-weight: 900; line-height: 1.1; color: #d32f2f; font-family: Impact, sans-serif; }
         
-        /* 內容區 */
+        /* 內容捲動區 */
         .content { height: 88vh; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         
-        /* 雙欄設定 */
+        /* 分區標題 */
+        .section-header {
+            font-size: 1.2rem;
+            color: #fbd050;
+            border-bottom: 2px solid #555;
+            padding-bottom: 5px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        .section-header span { background: #333; padding: 2px 10px; border-radius: 5px; }
+        
+        /* 網格設定 */
         .grid-container { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 20px; /* 拉大卡片間距 */
-            padding-bottom: 80px; 
+            gap: 20px; 
+            padding-bottom: 20px; 
         }
         
-        /* 3. 名片卡優化 */
+        /* 名片卡樣式 (維持大字體) */
         .card { 
             background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%); 
             border-left: 10px solid #fbd050; 
             border-radius: 10px; 
-            padding: 15px 20px; /* 內部空間加大 */
+            padding: 15px 20px; 
             position: relative; 
             display: flex; 
             flex-direction: column; 
             justify-content: center;
-            min-height: 110px; /* 卡片長高 */
+            min-height: 110px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         
+        /* 來賓卡片特別樣式 (粉紅色系) */
+        .card.guest-card {
+            border-left: 10px solid #ff4081;
+            background: linear-gradient(135deg, rgba(255,64,129,0.15) 0%, rgba(255,64,129,0.02) 100%);
+        }
+        .card.guest-card .card-job { color: #ff4081; }
+        .card.guest-card.new-arrival { animation: flashGuest 2s infinite; }
+        
         .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.5); border-left-color: #fff; }
         
-        /* ★ 職稱調整：顯著放大 */
         .card-job { 
-            font-size: 1.5rem; /* 原本約 1rem，放大 1.5 倍 */
+            font-size: 1.5rem; 
             color: #fbd050; 
             font-weight: 800; 
             margin-bottom: 5px; 
@@ -86,9 +104,8 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
         
-        /* ★ 名字調整：維持大字體，微調行距 */
         .card-name { 
-            font-size: 2.4rem; /* 非常大的名字 */
+            font-size: 2.4rem; 
             font-weight: 900; 
             color: #fff; 
             line-height: 1.1; 
@@ -98,13 +115,13 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         } 
         
-        /* 親友備註 */
         .card-note-container { position: absolute; top: 10px; right: 10px; }
         .card-note { font-size: 0.9rem; color: #222; background: #fbd050; padding: 4px 10px; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         
         @keyframes flash { 0% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } 50% { border-left-color: #ffffff; box-shadow: 0 0 20px #fbd050; } 100% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } }
-        
-        #loading { text-align: center; color: #aaa; margin-top: 50px; font-size: 1.5rem; grid-column: span 2; }
+        @keyframes flashGuest { 0% { border-left-color: #ff4081; box-shadow: 0 0 5px #ff4081; } 50% { border-left-color: #ffffff; box-shadow: 0 0 20px #ff4081; } 100% { border-left-color: #ff4081; box-shadow: 0 0 5px #ff4081; } }
+
+        #loading { text-align: center; color: #aaa; margin-top: 50px; font-size: 1.5rem; }
         
         .content::-webkit-scrollbar { width: 8px; }
         .content::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
@@ -126,8 +143,12 @@
 
     <div class="content">
         <div id="loading">連線資料庫中...</div>
-        <div class="grid-container" id="grid">
-            </div>
+        
+        <div class="section-header"><span>🦁 會員獅友</span></div>
+        <div class="grid-container" id="grid-members"></div>
+
+        <div class="section-header" style="margin-top: 30px;"><span>🎉 蒞臨貴賓</span></div>
+        <div class="grid-container" id="grid-guests"></div>
     </div>
 
     <script>
@@ -154,6 +175,7 @@
         function render(data) {
             document.getElementById("loading").style.display = "none";
             
+            // 更新數字
             const countElem = document.getElementById("totalCount");
             if (data.count > previousCount) {
                 countElem.style.color = "#ffff00"; 
@@ -162,29 +184,19 @@
             countElem.innerText = data.count;
             previousCount = data.count;
 
-            const grid = document.getElementById("grid");
-            grid.innerHTML = ""; 
+            // 取得兩個容器
+            const membersGrid = document.getElementById("grid-members");
+            const guestsGrid = document.getElementById("grid-guests");
+            
+            // 清空容器
+            membersGrid.innerHTML = "";
+            guestsGrid.innerHTML = "";
 
+            // 反轉順序，讓最新的在上面
             const reversedList = data.list.slice().reverse();
 
             reversedList.forEach(person => {
                 const card = document.createElement("div");
-                card.className = "card";
                 
-                let html = `
-                    <div class="info-group">
-                        <div class="card-job">${person.job}</div>
-                        <div class="card-name">${person.name}</div>
-                    </div>`;
-                
-                if (person.note) {
-                    html += `<div class="card-note-container"><span class="card-note">${person.note}</span></div>`;
-                }
-
-                card.innerHTML = html;
-                grid.appendChild(card);
-            });
-        }
-    </script>
-</body>
-</html>
+                // 判斷是否為來賓 (職稱包含 "來賓" 或 "貴賓")
+                const isGuest = (person.job.indexOf("來賓") > -1 || person.job.indexOf("貴
