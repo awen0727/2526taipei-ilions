@@ -2,11 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>群愛獅子會 - 出席簽到簿 (V6精修版)</title>
+    <title>群愛獅子會 - 出席簽到簿 (V6.5 分類計數版)</title>
     <style>
-        /* --- V6 精修調整版 --- */
+        /* --- V6.5 分類計數版 --- */
         
-        /* 1. 字型補強：加入 Emoji 支援，解決名字出現 [] 方塊的問題 */
         body { 
             margin: 0; padding: 0; 
             background-color: rgba(0,0,0,0.85); 
@@ -15,39 +14,52 @@
             overflow: hidden; 
         }
         
-        /* 2. 標題區：重新分配比例 */
+        /* 標題區：維持分離設計，但右邊要容納兩個盒子 */
         .header { 
             background: linear-gradient(90deg, #b48811 0%, #fbd050 100%); 
             padding: 10px 25px; 
             display: flex; 
             align-items: center; 
-            justify-content: space-between; /* 左右分開 */
+            justify-content: space-between; 
             height: auto;
-            min-height: 80px; /* 確保有足夠高度 */
+            min-height: 80px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.6); 
             border-bottom: 3px solid #fff; 
         }
         
-        /* 左邊標題文字：稍微縮小，把焦點讓給數字 */
+        /* 左邊標題 */
         .title-group { display: flex; flex-direction: column; }
         .title-main { font-size: 1.6rem; font-weight: 900; color: #4a3403; letter-spacing: 1px; line-height: 1.2;}
         .title-sub { font-size: 0.9rem; font-weight: bold; color: #6d4c05; letter-spacing: 2px; text-transform: uppercase;}
         
-        /* 右邊計數器：特大化 */
+        /* ★★★ 右邊統計區塊組 (新) ★★★ */
+        .stats-group {
+            display: flex;
+            gap: 15px; /* 兩個盒子中間的距離 */
+        }
+
+        /* 統一的計數盒樣式 */
         .counter-box { 
             background-color: #fff; 
-            padding: 5px 20px; 
-            border-radius: 15px; 
+            padding: 5px 15px; 
+            border-radius: 12px; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
             display: flex; 
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-width: 100px; /* 固定最小寬度，看起來更穩 */
+            min-width: 80px; /* 稍微改窄一點，以便放兩個 */
         }
-        .count-label { font-size: 0.9rem; font-weight: bold; color: #888; margin-bottom: -5px;}
-        /* ★ 數字調整：超大且粗 */
-        .count-number { font-size: 3.5rem; font-weight: 900; line-height: 1.1; color: #d32f2f; font-family: Impact, sans-serif; }
+        
+        .count-label { font-size: 0.8rem; font-weight: bold; color: #888; margin-bottom: -2px;}
+        
+        /* 數字樣式 */
+        .count-number { font-size: 2.8rem; font-weight: 900; line-height: 1.1; font-family: Impact, sans-serif; }
+        
+        /* 會員數字顏色 (深紅) */
+        #memberCount { color: #d32f2f; }
+        /* 來賓數字顏色 (深藍，區別一下) */
+        #guestCount { color: #1565c0; }
         
         /* 內容區 */
         .content { height: 88vh; padding: 20px; box-sizing: border-box; overflow-y: auto; }
@@ -56,39 +68,42 @@
         .grid-container { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 20px; /* 拉大卡片間距 */
+            gap: 20px; 
             padding-bottom: 80px; 
         }
         
-        /* 3. 名片卡優化 */
+        /* 名片卡 */
         .card { 
             background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%); 
             border-left: 10px solid #fbd050; 
             border-radius: 10px; 
-            padding: 15px 20px; /* 內部空間加大 */
+            padding: 15px 20px; 
             position: relative; 
             display: flex; 
             flex-direction: column; 
             justify-content: center;
-            min-height: 110px; /* 卡片長高 */
+            min-height: 110px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         
+        /* 若是來賓，卡片左邊換個顏色 (選用) */
+        .card.is-guest { border-left-color: #42a5f5; }
+
         .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.5); border-left-color: #fff; }
         
-        /* ★ 職稱調整：顯著放大 */
         .card-job { 
-            font-size: 1.5rem; /* 原本約 1rem，放大 1.5 倍 */
+            font-size: 1.5rem; 
             color: #fbd050; 
             font-weight: 800; 
             margin-bottom: 5px; 
             letter-spacing: 1px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
+        /* 來賓的職稱顏色也換一下 */
+        .card.is-guest .card-job { color: #42a5f5; }
         
-        /* ★ 名字調整：維持大字體，微調行距 */
         .card-name { 
-            font-size: 2.4rem; /* 非常大的名字 */
+            font-size: 2.4rem; 
             font-weight: 900; 
             color: #fff; 
             line-height: 1.1; 
@@ -98,7 +113,6 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         } 
         
-        /* 親友備註 */
         .card-note-container { position: absolute; top: 10px; right: 10px; }
         .card-note { font-size: 0.9rem; color: #222; background: #fbd050; padding: 4px 10px; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         
@@ -118,9 +132,16 @@
             <div class="title-main">🦁 群愛獅子會</div>
             <div class="title-sub">GATHERING CHECK-IN</div>
         </div>
-        <div class="counter-box">
-            <div class="count-label">目前出席</div>
-            <div class="count-number" id="totalCount">0</div>
+        
+        <div class="stats-group">
+            <div class="counter-box">
+                <div class="count-label">會員</div>
+                <div class="count-number" id="memberCount">0</div>
+            </div>
+            <div class="counter-box">
+                <div class="count-label">來賓</div>
+                <div class="count-number" id="guestCount">0</div>
+            </div>
         </div>
     </div>
 
@@ -137,7 +158,9 @@
         setInterval(fetchData, 5000);
         fetchData(); 
 
-        let previousCount = 0;
+        // 舊的計數器變數
+        let prevMemberCount = 0;
+        let prevGuestCount = 0;
 
         function fetchData() {
             fetch(GAS_URL + "?action=getDashboard")
@@ -154,14 +177,38 @@
         function render(data) {
             document.getElementById("loading").style.display = "none";
             
-            const countElem = document.getElementById("totalCount");
-            if (data.count > previousCount) {
-                countElem.style.color = "#ffff00"; 
-                setTimeout(() => countElem.style.color = "#d32f2f", 500);
-            }
-            countElem.innerText = data.count;
-            previousCount = data.count;
+            // ★★★ 1. 計算分類人數 ★★★
+            let memberCount = 0;
+            let guestCount = 0;
 
+            // 判斷關鍵字：若職稱含有 "來賓" 或 "貴賓"，就算 Guest，否則算 Member
+            data.list.forEach(person => {
+                if (person.job.includes("來賓") || person.job.includes("貴賓")) {
+                    guestCount++;
+                } else {
+                    memberCount++;
+                }
+            });
+
+            // ★★★ 2. 更新會員數字 ★★★
+            const mElem = document.getElementById("memberCount");
+            mElem.innerText = memberCount;
+            if (memberCount > prevMemberCount) {
+                mElem.style.color = "#ffff00"; // 閃一下黃色
+                setTimeout(() => mElem.style.color = "#d32f2f", 500); // 變回紅色
+            }
+            prevMemberCount = memberCount;
+
+            // ★★★ 3. 更新來賓數字 ★★★
+            const gElem = document.getElementById("guestCount");
+            gElem.innerText = guestCount;
+            if (guestCount > prevGuestCount) {
+                gElem.style.color = "#ffff00"; 
+                setTimeout(() => gElem.style.color = "#1565c0", 500); // 變回藍色
+            }
+            prevGuestCount = guestCount;
+
+            // ★★★ 4. 渲染名單 ★★★
             const grid = document.getElementById("grid");
             grid.innerHTML = ""; 
 
@@ -171,6 +218,11 @@
                 const card = document.createElement("div");
                 card.className = "card";
                 
+                // 判斷是否為來賓，加上特殊樣式 (例如左邊金條變藍條)
+                if (person.job.includes("來賓") || person.job.includes("貴賓")) {
+                    card.classList.add("is-guest");
+                }
+
                 let html = `
                     <div class="info-group">
                         <div class="card-job">${person.job}</div>
