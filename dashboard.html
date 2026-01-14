@@ -2,121 +2,135 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>群愛獅子會 - 戰情室 (V7穩定版)</title>
+    <title>群愛獅子會 - 出席簽到簿 (V5.5 穩定美化版)</title>
     <style>
-        /* --- V7 懸浮分離式設計 --- */
+        /* --- V5.5 基於 V5 架構的視覺增強版 --- */
         
+        /* 1. 字型補強：加入 Emoji 支援 */
         body { 
             margin: 0; padding: 0; 
-            background-color: rgba(0,0,0,0.85); /* 深色半透明背景 */
+            background-color: rgba(0,0,0,0.85); 
             color: white; 
-            font-family: "Microsoft JhengHei", "Heiti TC", "Segoe UI Emoji", sans-serif; 
+            font-family: "Microsoft JhengHei", "Heiti TC", "Segoe UI Emoji", "Apple Color Emoji", sans-serif; 
             overflow: hidden; 
         }
         
-        /* 1. 頂部區域：改用 Flex 佈局，讓左右兩塊分離 */
-        .header-container {
-            padding: 15px 25px;
-            display: flex;
-            justify-content: space-between; /* 左右撐開 */
-            align-items: center;
-            height: 10vh; /* 固定高度 */
+        /* 2. 標題區改造：改成透明容器，讓內部元素變成「懸浮島」 */
+        .header { 
+            background: transparent; /* 取消原本的長條背景 */
+            padding: 15px 25px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            height: auto;
+            min-height: 80px;
+            box-shadow: none; /* 取消長條陰影 */
+            border: none;
         }
-
-        /* 左島：標題區 */
-        .title-box {
+        
+        /* 左島：標題 */
+        .title { 
             background: linear-gradient(90deg, #b48811 0%, #fbd050 100%);
             padding: 10px 30px;
             border-radius: 50px; /* 圓角膠囊狀 */
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 1.6rem; 
+            font-weight: 900; 
+            color: #4a3403; 
+            letter-spacing: 1px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
             border: 2px solid #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            text-shadow: none;
         }
-        .title-main { font-size: 1.5rem; font-weight: 900; color: #4a3403; letter-spacing: 1px; line-height: 1; }
-        .title-sub { font-size: 0.8rem; font-weight: bold; color: #6d4c05; letter-spacing: 2px; margin-top: 2px; }
-
-        /* 右島：計數器區 (完全獨立) */
+        
+        /* 右島：計數器 (加大、顯眼) */
         .counter-box { 
             background-color: #fff; 
             padding: 5px 25px; 
             border-radius: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            color: #b48811; 
             display: flex; 
+            flex-direction: column; /* 改直式，讓數字更大 */
             align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            min-width: 100px;
             border: 2px solid #fbd050;
         }
-        .count-label { font-size: 1rem; font-weight: bold; color: #555; margin-right: 15px; }
-        .count-number { font-size: 3rem; font-weight: 900; line-height: 1; color: #d32f2f; font-family: Impact, sans-serif; }
+        
+        .count-label { font-size: 0.9rem; font-weight: bold; color: #555; margin-bottom: -5px; }
+        .count-number { font-size: 3.5rem; font-weight: 900; line-height: 1; color: #d32f2f; font-family: Impact, sans-serif; }
         
         /* 內容區 */
-        .content { height: 88vh; padding: 15px 25px; box-sizing: border-box; overflow-y: auto; }
+        .content { height: 88vh; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         
-        /* 雙欄排版 (最穩定的顯示方式) */
+        /* 雙欄位 Grid 排版 (維持不變) */
         .grid-container { 
             display: grid; 
-            grid-template-columns: 1fr 1fr; /* 左右各半 */
-            gap: 20px; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; /* 拉大間距 */
             padding-bottom: 80px; 
         }
         
-        /* 卡片設計 */
+        /* 名片卡優化 */
         .card { 
             background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%); 
             border-left: 10px solid #fbd050; 
-            border-radius: 12px; 
+            border-radius: 10px; 
             padding: 15px 20px; 
+            text-align: left; 
             position: relative; 
             display: flex; 
             flex-direction: column; 
             justify-content: center;
-            min-height: 100px;
+            transition: all 0.3s; 
+            min-height: 100px; /* 卡片增高 */
             box-shadow: 0 5px 10px rgba(0,0,0,0.3);
         }
         
-        .card.new-arrival { animation: flash 2s infinite; background-color: rgba(180, 136, 17, 0.5); border-left-color: #fff; }
+        .card.new-arrival { animation: flashMedium 2s infinite; background-color: rgba(180, 136, 17, 0.4); border-left-color: #fff; }
         
-        /* 文字大小設定 */
+        .info-group { display: flex; flex-direction: column; }
+        
+        /* 職稱：顯著放大 */
         .card-job { 
-            font-size: 1.4rem; 
+            font-size: 1.4rem; /* 放大 */
             color: #fbd050; 
             font-weight: 800; 
             margin-bottom: 5px; 
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
         
+        /* 姓名：顯著放大 */
         .card-name { 
-            font-size: 2.5rem; 
+            font-size: 2.4rem; /* 放大 */
             font-weight: 900; 
             color: #fff; 
             line-height: 1.1; 
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis; 
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         } 
         
         /* 親友備註 */
-        .card-note-container { position: absolute; top: 12px; right: 12px; }
+        .card-note-container { position: absolute; top: 10px; right: 10px; }
         .card-note { font-size: 0.9rem; color: #222; background: #fbd050; padding: 4px 10px; border-radius: 12px; font-weight: bold; }
         
-        @keyframes flash { 0% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } 50% { border-left-color: #ffffff; box-shadow: 0 0 20px #fbd050; } 100% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } }
+        @keyframes flashMedium { 0% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } 50% { border-left-color: #ffffff; box-shadow: 0 0 15px #fbd050; } 100% { border-left-color: #fbd050; box-shadow: 0 0 5px #fbd050; } }
         
         #loading { text-align: center; color: #aaa; margin-top: 50px; font-size: 1.5rem; grid-column: span 2; }
         
-        /* 隱藏捲軸 */
-        .content::-webkit-scrollbar { width: 0px; }
+        /* 捲軸美化 */
+        .content::-webkit-scrollbar { width: 6px; }
+        .content::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .content::-webkit-scrollbar-thumb { background: #fbd050; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <div class="header-container">
-        <div class="title-box">
-            <div class="title-main">🦁 群愛獅子會</div>
-            <div class="title-sub">GATHERING CHECK-IN</div>
-        </div>
-        
+    <div class="header">
+        <div class="title">🦁 群愛獅子會</div>
         <div class="counter-box">
             <div class="count-label">目前出席</div>
             <div class="count-number" id="totalCount">0</div>
@@ -124,71 +138,11 @@
     </div>
 
     <div class="content">
+        <div id="loading">連線資料庫中...</div>
         <div class="grid-container" id="grid">
-            <div id="loading">連線資料庫中...</div>
-        </div>
+            </div>
     </div>
 
     <script>
-        // 您的 GAS 網址 (維持不變)
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyPT4Joi9U2kQisNsWEb-odpD-mifTcs1h44h60-fdwWh-ulh2l8bGHnXmtWn9Gy76Y/exec";
-        
-        setInterval(fetchData, 5000);
-        fetchData(); 
-
-        let previousCount = 0;
-
-        function fetchData() {
-            fetch(GAS_URL + "?action=getDashboard")
-            .then(res => res.json())
-            .then(data => {
-                render(data);
-            })
-            .catch(err => {
-                console.error("更新失敗", err);
-                // 如果失敗也不要卡死畫面
-            });
-        }
-
-        function render(data) {
-            // 移除 loading
-            const loading = document.getElementById("loading");
-            if(loading) loading.style.display = "none";
-            
-            // 更新數字
-            const countElem = document.getElementById("totalCount");
-            if (data.count > previousCount) {
-                countElem.style.color = "#ffff00"; 
-                setTimeout(() => countElem.style.color = "#d32f2f", 500);
-            }
-            countElem.innerText = data.count;
-            previousCount = data.count;
-
-            // 更新名單
-            const grid = document.getElementById("grid");
-            grid.innerHTML = ""; // 清空舊資料
-
-            // 反轉陣列，讓最新的在最上面
-            const reversedList = data.list.slice().reverse();
-
-            reversedList.forEach(person => {
-                const card = document.createElement("div");
-                card.className = "card";
-                
-                let html = `
-                    <div class="info-group">
-                        <div class="card-job">${person.job}</div>
-                        <div class="card-name">${person.name}</div>
-                    </div>`;
-                
-                if (person.note) {
-                    html += `<div class="card-note-container"><span class="card-note">${person.note}</span></div>`;
-                }
-
-                card.innerHTML = html;
-                grid.appendChild(card);
-            });
-        }
-    </script>
-</body>
-</html>
+        // ★★★ 您的 GAS 網址 (維持不變) ★★★
+        const GAS_URL = "
