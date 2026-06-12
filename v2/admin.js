@@ -229,6 +229,12 @@
       text: document.getElementById("importMembersText").value
     })
   ));
+  document.getElementById("importLegacySheetButton").addEventListener("click", () => confirmAction(
+    "確定要從舊版試算表的「名單」分頁匯入會員嗎？舊資料不會被修改。",
+    () => runAction("adminImportLegacyRoster", {
+      termId: document.getElementById("importTerm").value
+    })
+  ));
   function createEvent(prefix) {
     const stem = prefix ? `${prefix}Event` : "event";
     return runAction("adminCreateEvent", {

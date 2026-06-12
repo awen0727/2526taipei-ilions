@@ -9,6 +9,11 @@ const SHEETS = Object.freeze({
   AUDIT: "AuditLogs"
 });
 
+const LEGACY_ROSTER = Object.freeze({
+  spreadsheetId: "1PdVN_4KyubZEHdnLfchX70GcAU7o_DVr7Nc71imQDKk",
+  sheetName: "名單"
+});
+
 function doGet(e) {
   try {
     const action = String((e && e.parameter && e.parameter.action) || "");
@@ -46,7 +51,8 @@ function routePost_(payload) {
     adminSetEventStatus: adminSetEventStatus_,
     adminCreateTerm: adminCreateTerm_,
     adminSaveRole: adminSaveRole_,
-    adminBulkImportMembers: adminBulkImportMembers_
+    adminBulkImportMembers: adminBulkImportMembers_,
+    adminImportLegacyRoster: adminImportLegacyRoster_
   };
 
   if (publicActions[action]) return publicActions[action](payload);
@@ -322,15 +328,67 @@ function adminBulkImportMembers_(payload) {
   const text = String(payload.text || "").trim();
   if (!text) throw new Error("請先貼上舊會員名單");
 
-  const parsed = text.split(/\r?\n/).map(line => {
+  const parsed = text.split(/\r?\n/).map((line, index) => {
     const columns = line.includes("\t") ? line.split("\t") : line.split(/[,，]/);
     return {
       name: cleanText_(columns[0] || "", 40),
-      position: cleanText_(columns[1] || "會員", 50)
+      position: cleanText_(columns[1] || "會員", 50),
+      sortOrder: index + 1
     };
   }).filter(row => row.name && !/^(姓名|會員姓名|name)$/i.test(row.name));
   if (!parsed.length) throw new Error("沒有找到可匯入的會員資料");
   if (parsed.length > 300) throw new Error("單次最多匯入 300 位會員");
+
+  return importMemberRecords_(termId, parsed);
+}
+
+function adminImportLegacyRoster_(payload) {
+  const termId = cleanText_(payload.termId, 30, "匯入年度");
+  if (!findOne_(SHEETS.TERMS, "term_id", termId)) throw new Error("找不到指定年度");
+  const legacySheet = SpreadsheetApp.openById(LEGACY_ROSTER.spreadsheetId)
+    .getSheetByName(LEGACY_ROSTER.sheetName);
+  if (!legacySheet) throw new Error(`舊試算表找不到「${LEGACY_ROSTER.sheetName}」分頁`);
+  const values = legacySheet.getDataRange().getDisplayValues();
+  if (values.length < 2) throw new Error("舊版名單沒有可匯入資料");
+
+  const headerInfo = detectLegacyHeaders_(values);
+  const parsed = values.slice(headerInfo.headerRow + 1).map((row, index) => ({
+    name: cleanText_(row[headerInfo.nameColumn] || "", 40),
+    position: cleanText_(headerInfo.positionColumn >= 0 ? row[headerInfo.positionColumn] || "會員" : "會員", 50),
+    sortOrder: index + 1
+  })).filter(row => row.name);
+  if (!parsed.length) throw new Error("舊版名單沒有找到會員姓名");
+  return importMemberRecords_(termId, parsed);
+}
+
+function detectLegacyHeaders_(values) {
+  const nameAliases = ["姓名", "會員姓名", "名字", "name"];
+  const positionAliases = ["職位", "職稱", "職務", "position", "job"];
+  const limit = Math.min(values.length, 10);
+  for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
+    const headers = values[rowIndex].map(value => normalizeName_(value));
+    const nameColumn = headers.findIndex(value => nameAliases.map(normalizeName_).includes(value));
+    if (nameColumn >= 0) {
+      return {
+        headerRow: rowIndex,
+        nameColumn,
+        positionColumn: headers.findIndex(value => positionAliases.map(normalizeName_).includes(value))
+      };
+    }
+  }
+  throw new Error("無法辨識舊名單的姓名欄，請確認前十列含有「姓名」標題");
+}
+
+function importMemberRecords_(termId, parsed) {
+  if (parsed.length > 300) throw new Error("單次最多匯入 300 位會員");
+  const uniqueRecords = [];
+  const inputNames = {};
+  parsed.forEach(item => {
+    const normalized = normalizeName_(item.name);
+    if (!normalized || inputNames[normalized]) return;
+    inputNames[normalized] = true;
+    uniqueRecords.push(item);
+  });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -341,9 +399,7 @@ function adminBulkImportMembers_(payload) {
     let created = 0;
     let existing = 0;
     let rolesSaved = 0;
-    const skipped = [];
-
-    parsed.forEach(item => {
+    uniqueRecords.forEach(item => {
       const normalized = normalizeName_(item.name);
       if (!normalized) return;
       let member = seen[normalized];
@@ -371,20 +427,20 @@ function adminBulkImportMembers_(payload) {
       if (role) {
         updateByComposite_(SHEETS.ROLES, { term_id: termId, member_id: member.member_id }, {
           position: item.position,
-          sort_order: role.sort_order || 100
+          sort_order: item.sortOrder || role.sort_order || 100
         });
       } else {
         append_(SHEETS.ROLES, {
           term_id: termId,
           member_id: member.member_id,
           position: item.position,
-          sort_order: 100
+          sort_order: item.sortOrder || 100
         });
       }
       rolesSaved++;
     });
 
-    audit_("bulk_import_members", "admin", termId, JSON.stringify({ created, existing, rolesSaved, skipped }));
+    audit_("bulk_import_members", "admin", termId, JSON.stringify({ created, existing, rolesSaved }));
     return { message: `匯入完成：新增 ${created} 位、更新 ${existing} 位既有會員、儲存 ${rolesSaved} 筆職位。` };
   } finally {
     lock.releaseLock();

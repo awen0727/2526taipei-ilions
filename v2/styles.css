@@ -110,6 +110,8 @@ th { background: #faf6e8; }
 .import-panel { display: grid; gap: 12px; padding: 16px; border: 2px dashed #d2b75f; border-radius: 10px; background: #fffdf5; }
 .import-panel h3, .import-panel p { margin: 0; }
 .import-panel textarea { min-height: 180px; font-family: ui-monospace, monospace; }
+.import-panel details { display: grid; gap: 12px; padding-top: 8px; border-top: 1px solid #e1d6ad; }
+.import-panel summary { cursor: pointer; color: var(--muted); font-weight: 700; }
 .card-list { display: grid; gap: 10px; margin-top: 12px; }
 .manage-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #e2e2e2; border-radius: 10px; background: white; }
 .manage-card.open-card { border-left: 6px solid var(--success); }
