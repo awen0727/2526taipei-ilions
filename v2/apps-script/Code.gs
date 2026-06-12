@@ -52,7 +52,8 @@ function routePost_(payload) {
     adminCreateTerm: adminCreateTerm_,
     adminSaveRole: adminSaveRole_,
     adminBulkImportMembers: adminBulkImportMembers_,
-    adminImportLegacyRoster: adminImportLegacyRoster_
+    adminImportLegacyRoster: adminImportLegacyRoster_,
+    adminInspectLegacyRoster: adminInspectLegacyRoster_
   };
 
   if (publicActions[action]) return publicActions[action](payload);
@@ -396,9 +397,37 @@ function adminImportLegacyRoster_(payload) {
   return importMemberRecords_(termId, parsed);
 }
 
+function adminInspectLegacyRoster_() {
+  const legacySheet = SpreadsheetApp.openById(LEGACY_ROSTER.spreadsheetId)
+    .getSheetByName(LEGACY_ROSTER.sheetName);
+  if (!legacySheet) throw new Error(`舊試算表找不到「${LEGACY_ROSTER.sheetName}」分頁`);
+  const values = legacySheet.getDataRange().getDisplayValues();
+  const headerInfo = detectLegacyHeaders_(values);
+  const headers = values[headerInfo.headerRow].map(String);
+  const dataRows = values.slice(headerInfo.headerRow + 1);
+  return {
+    sheetName: LEGACY_ROSTER.sheetName,
+    rowCount: dataRows.length,
+    nonEmptyNameCount: dataRows.filter(row => String(row[headerInfo.nameColumn] || "").trim()).length,
+    nonEmptyEnglishNameCount: headerInfo.englishNameColumn >= 0
+      ? dataRows.filter(row => String(row[headerInfo.englishNameColumn] || "").trim()).length
+      : 0,
+    headerRow: headerInfo.headerRow + 1,
+    headers,
+    detected: {
+      name: headers[headerInfo.nameColumn] || "",
+      englishName: headerInfo.englishNameColumn >= 0 ? headers[headerInfo.englishNameColumn] : "",
+      position: headerInfo.positionColumn >= 0 ? headers[headerInfo.positionColumn] : ""
+    }
+  };
+}
+
 function detectLegacyHeaders_(values) {
   const nameAliases = ["姓名", "會員姓名", "獅友姓名", "中文姓名", "名字", "name"];
-  const englishNameAliases = ["英文名字", "英文姓名", "英文名", "英文名稱", "englishname", "english name", "nickname"];
+  const englishNameAliases = [
+    "英文名字", "英文姓名", "英文名", "英文名稱", "英文", "英文稱呼",
+    "englishname", "english name", "english", "nickname", "nick name"
+  ];
   const positionAliases = ["職位", "職稱", "職務", "position", "job"];
   const limit = Math.min(values.length, 10);
   for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
