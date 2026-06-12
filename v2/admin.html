@@ -9,85 +9,124 @@
   <script src="common.js" defer></script>
   <script src="admin.js" defer></script>
 </head>
-<body>
-  <header>
-    <h1>群愛獅子會 V2 測試管理台</h1>
-    <p>此管理台操作新版測試資料，不影響舊系統。</p>
+<body class="admin-page">
+  <header class="admin-header">
+    <div>
+      <h1>群愛獅子會管理台</h1>
+      <p>V2 測試環境，不影響舊系統</p>
+    </div>
+    <button id="refreshButton" class="header-button hidden" type="button">重新整理</button>
   </header>
+
   <main>
-    <section class="panel stack">
+    <section id="loginPanel" class="panel login-card stack">
+      <h2>管理員登入</h2>
+      <p class="muted">登入後，本次瀏覽期間不需要重複輸入密鑰。</p>
       <label>管理密鑰
         <input id="adminToken" type="password" autocomplete="current-password">
       </label>
-      <div class="toolbar">
-        <button id="loadButton" type="button">載入管理資料</button>
-        <button id="clearTokenButton" class="secondary" type="button">清除儲存密鑰</button>
-      </div>
-      <div id="message" class="message"></div>
+      <button id="loginButton" type="button">進入管理台</button>
+      <div id="loginMessage" class="message"></div>
     </section>
 
-    <section class="panel stack">
-      <h2>建立會員</h2>
-      <div class="grid">
-        <label>會員姓名<input id="memberName" maxlength="40"></label>
-        <label>入會日期<input id="joinDate" type="date"></label>
-      </div>
-      <button id="createMemberButton" type="button">建立會員</button>
-    </section>
+    <div id="adminApp" class="hidden">
+      <nav class="admin-tabs" aria-label="管理功能">
+        <button class="tab-button active" data-tab="today" type="button">今日簽到</button>
+        <button class="tab-button" data-tab="members" type="button">會員管理</button>
+        <button class="tab-button" data-tab="events" type="button">活動紀錄</button>
+        <button class="tab-button" data-tab="roles" type="button">年度職位</button>
+      </nav>
 
-    <section class="panel stack">
-      <h2>建立活動</h2>
-      <div class="grid">
-        <label>活動名稱<input id="eventTitle" maxlength="80"></label>
-        <label>活動日期<input id="eventDate" type="date"></label>
-        <label>年度 ID<input id="eventTermId" maxlength="30" placeholder="例如 T2526"></label>
-      </div>
-      <button id="createEventButton" type="button">建立並開放活動</button>
-    </section>
+      <div id="message" class="message floating-message"></div>
 
-    <section class="panel stack">
-      <h2>建立／複製年度職位</h2>
-      <div class="grid">
-        <label>新年度 ID<input id="newTermId" maxlength="30" placeholder="T2627"></label>
-        <label>新年度名稱<input id="newTermName" maxlength="50" placeholder="2026-2027年度"></label>
-        <label>開始日期<input id="termStart" type="date"></label>
-        <label>結束日期<input id="termEnd" type="date"></label>
-        <label>複製來源年度 ID<input id="sourceTermId" maxlength="30" placeholder="T2526"></label>
-      </div>
-      <button id="createTermButton" type="button">建立年度並複製職位</button>
-    </section>
+      <section class="tab-page active" data-page="today">
+        <div class="summary-grid">
+          <article class="summary-card featured">
+            <span>目前活動</span>
+            <strong id="currentEventName">尚未建立活動</strong>
+            <small id="currentEventDate"></small>
+            <button id="toggleCurrentEventButton" class="secondary hidden" type="button"></button>
+          </article>
+          <article class="summary-card"><span>已簽到會員</span><strong id="todayMemberCount">0</strong></article>
+          <article class="summary-card"><span>今日來賓</span><strong id="todayGuestCount">0</strong></article>
+          <article class="summary-card"><span>待核准綁定</span><strong id="pendingCount">0</strong></article>
+        </div>
 
-    <section class="panel stack">
-      <h2>調整會員年度職位</h2>
-      <div class="grid">
-        <label>年度<select id="roleTerm"></select></label>
-        <label>會員<select id="roleMember"></select></label>
-        <label>職位<input id="rolePosition" maxlength="50" placeholder="例如：會長"></label>
-        <label>顯示順序<input id="roleOrder" type="number" min="1" max="999" value="100"></label>
-      </div>
-      <button id="saveRoleButton" type="button">儲存年度職位</button>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>會員</th><th>目前職位</th><th>順序</th><th>操作</th></tr></thead>
-          <tbody id="rolesBody"></tbody>
-        </table>
-      </div>
-    </section>
+        <section id="quickEventPanel" class="panel stack">
+          <div class="section-heading">
+            <div><h2>建立今日活動</h2><p>建立後立即開放會員簽到。</p></div>
+          </div>
+          <div class="grid">
+            <label>活動名稱<input id="quickEventTitle" maxlength="80" placeholder="例如：六月份第二次例會"></label>
+            <label>活動日期<input id="quickEventDate" type="date"></label>
+            <label>年度<select id="quickEventTerm"></select></label>
+          </div>
+          <button id="quickCreateEventButton" type="button">建立並開放簽到</button>
+        </section>
 
-    <section class="panel">
-      <h2>待核准 LINE 綁定</h2>
-      <div class="table-wrap"><table><thead><tr><th>LINE 名稱</th><th>聲明姓名</th><th>綁定會員</th><th>操作</th></tr></thead><tbody id="bindingsBody"></tbody></table></div>
-    </section>
+        <section class="panel">
+          <div class="section-heading">
+            <div><h2>待核准 LINE 綁定</h2><p>確認申請人身分後，選擇對應會員。</p></div>
+            <span id="bindingBadge" class="badge"></span>
+          </div>
+          <div id="bindingCards" class="card-list"></div>
+          <p id="noBindings" class="empty-state">目前沒有待核准申請。</p>
+        </section>
+      </section>
 
-    <section class="panel">
-      <h2>會員</h2>
-      <div class="table-wrap"><table><thead><tr><th>ID</th><th>姓名</th><th>狀態</th><th>LINE</th><th>操作</th></tr></thead><tbody id="membersBody"></tbody></table></div>
-    </section>
+      <section class="tab-page" data-page="members">
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><h2>會員管理</h2><p>離會會員請停用，不要刪除，歷史紀錄才能保留。</p></div>
+            <button id="showCreateMemberButton" type="button">新增會員</button>
+          </div>
+          <div id="createMemberForm" class="inline-form hidden">
+            <label>會員姓名<input id="memberName" maxlength="40"></label>
+            <label>入會日期<input id="joinDate" type="date"></label>
+            <button id="createMemberButton" type="button">確認新增</button>
+          </div>
+          <label>搜尋會員
+            <input id="memberSearch" type="search" placeholder="輸入姓名">
+          </label>
+          <div id="memberCards" class="card-list"></div>
+        </section>
+      </section>
 
-    <section class="panel">
-      <h2>活動</h2>
-      <div class="table-wrap"><table><thead><tr><th>日期</th><th>活動</th><th>狀態</th><th>操作</th></tr></thead><tbody id="eventsBody"></tbody></table></div>
-    </section>
+      <section class="tab-page" data-page="events">
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><h2>活動紀錄</h2><p>同一時間只會開放一場活動。</p></div>
+            <button id="showCreateEventButton" type="button">建立活動</button>
+          </div>
+          <div id="createEventForm" class="inline-form hidden">
+            <label>活動名稱<input id="eventTitle" maxlength="80"></label>
+            <label>活動日期<input id="eventDate" type="date"></label>
+            <label>年度<select id="eventTerm"></select></label>
+            <button id="createEventButton" type="button">建立並開放</button>
+          </div>
+          <div id="eventCards" class="card-list"></div>
+        </section>
+      </section>
+
+      <section class="tab-page" data-page="roles">
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><h2>年度職位</h2><p>每年七月先複製上一年度，再修改異動人員。</p></div>
+            <button id="showCreateTermButton" type="button">建立新年度</button>
+          </div>
+          <div id="createTermForm" class="inline-form hidden">
+            <label>新年度代碼<input id="newTermId" maxlength="30" placeholder="例如 T2627"></label>
+            <label>新年度名稱<input id="newTermName" maxlength="50" placeholder="例如 2026-2027年度"></label>
+            <label>開始日期<input id="termStart" type="date"></label>
+            <label>結束日期<input id="termEnd" type="date"></label>
+            <label>複製來源年度<select id="sourceTerm"></select></label>
+            <button id="createTermButton" type="button">建立並複製職位</button>
+          </div>
+          <label>選擇年度<select id="roleTerm"></select></label>
+          <div id="roleCards" class="card-list"></div>
+        </section>
+      </section>
+    </div>
   </main>
 </body>
 </html>

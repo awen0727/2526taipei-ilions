@@ -73,8 +73,59 @@ th { background: #faf6e8; }
 .stats { display: flex; gap: 12px; flex-wrap: wrap; }
 .stat { min-width: 120px; padding: 12px; border-radius: 8px; background: white; text-align: center; }
 .stat strong { display: block; font-size: 2rem; color: var(--gold); }
+.admin-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.header-button { width: auto; color: #3d2b02; background: rgba(255,255,255,.65); }
+.login-card { width: min(460px, 100%); margin: 50px auto; }
+.admin-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin-bottom: 18px;
+  padding: 7px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 3px 14px rgba(0,0,0,.09);
+}
+.tab-button { color: var(--muted); background: transparent; }
+.tab-button.active { color: white; background: var(--gold); }
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+.floating-message { position: sticky; top: 72px; z-index: 4; padding: 0 8px; background: var(--bg); }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+.summary-card { display: grid; gap: 5px; padding: 18px; border-radius: 12px; background: white; box-shadow: 0 3px 14px rgba(0,0,0,.09); }
+.summary-card span, .summary-card small { color: var(--muted); }
+.summary-card strong { font-size: 2rem; color: var(--gold); }
+.summary-card.featured { grid-column: span 2; background: #302812; color: white; }
+.summary-card.featured strong { color: var(--gold-light); font-size: 1.45rem; }
+.summary-card.featured button { width: fit-content; margin-top: 8px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.section-heading h2, .section-heading p { margin: 0; }
+.section-heading p { margin-top: 4px; color: var(--muted); }
+.section-heading button { width: auto; }
+.inline-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; padding: 14px; border-radius: 10px; background: #faf6e8; }
+.inline-form button { align-self: end; }
+.card-list { display: grid; gap: 10px; margin-top: 12px; }
+.manage-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #e2e2e2; border-radius: 10px; background: white; }
+.manage-card.open-card { border-left: 6px solid var(--success); }
+.manage-card-info { display: grid; gap: 4px; }
+.manage-card-info strong { font-size: 1.08rem; }
+.manage-card-actions { display: flex; align-items: center; gap: 8px; }
+.manage-card-actions select { min-width: 180px; }
+.manage-card button { width: auto; white-space: nowrap; }
+.role-card { display: grid; grid-template-columns: minmax(120px, 1fr) 1.5fr 80px auto; }
+.empty-state { padding: 24px; text-align: center; color: var(--muted); }
 @media (max-width: 640px) {
   main { width: min(100% - 18px, 1100px); margin: 12px auto; }
   .panel { padding: 15px; }
   th, td { padding: 7px; }
+  .admin-header { align-items: flex-start; }
+  .admin-tabs { grid-template-columns: repeat(2, 1fr); }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .summary-card.featured { grid-column: span 2; }
+  .section-heading, .manage-card, .manage-card-actions { align-items: stretch; flex-direction: column; }
+  .section-heading button, .manage-card button { width: 100%; }
+  .role-card { grid-template-columns: 1fr; }
 }
