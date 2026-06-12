@@ -112,6 +112,7 @@ th { background: #faf6e8; }
 .import-panel textarea { min-height: 180px; font-family: ui-monospace, monospace; }
 .import-panel details { display: grid; gap: 12px; padding-top: 8px; border-top: 1px solid #e1d6ad; }
 .import-panel summary { cursor: pointer; color: var(--muted); font-weight: 700; }
+.inspection-result { display: grid; gap: 5px; padding: 12px; border-radius: 8px; background: #f0f4f8; color: #344054; font-size: .9rem; overflow-wrap: anywhere; }
 .card-list { display: grid; gap: 10px; margin-top: 12px; }
 .manage-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #e2e2e2; border-radius: 10px; background: white; }
 .manage-card.open-card { border-left: 6px solid var(--success); }

@@ -282,6 +282,25 @@
       termId: document.getElementById("importTerm").value
     })
   ));
+  document.getElementById("inspectLegacySheetButton").addEventListener("click", async () => {
+    const output = document.getElementById("legacyInspection");
+    try {
+      const result = await post({ action: "adminInspectLegacyRoster", adminToken: adminToken() });
+      output.replaceChildren();
+      [
+        `標題列：第 ${result.headerRow} 列`,
+        `所有欄位：${result.headers.join("、")}`,
+        `中文姓名欄：${result.detected.name || "未辨識"}`,
+        `英文姓名欄：${result.detected.englishName || "未辨識"}`,
+        `職位欄：${result.detected.position || "未辨識"}`,
+        `中文姓名非空白：${result.nonEmptyNameCount} 筆`,
+        `英文姓名非空白：${result.nonEmptyEnglishNameCount} 筆`
+      ].forEach(text => output.appendChild(el("div", "", text)));
+      output.classList.remove("hidden");
+    } catch (error) {
+      setMessage(message, error.message, true);
+    }
+  });
   function createEvent(prefix) {
     const stem = prefix ? `${prefix}Event` : "event";
     return runAction("adminCreateEvent", {
