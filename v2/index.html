@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>群愛獅子會 V2 測試簽到</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="config.js"></script>
+  <script src="common.js" defer></script>
+  <script src="checkin.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>群愛獅子會 V2 測試簽到</h1>
+    <p>此頁為新版測試，不影響現行簽到系統。</p>
+  </header>
+  <main>
+    <section class="panel stack">
+      <div id="profile" class="profile hidden">
+        <img id="profileImage" alt="LINE 頭像">
+        <div>
+          <strong id="lineName"></strong>
+          <div id="memberInfo" class="muted"></div>
+        </div>
+      </div>
+      <div id="eventInfo" class="muted">正在讀取目前活動...</div>
+      <div id="message" class="message"></div>
+    </section>
+
+    <section id="bindingPanel" class="panel stack hidden">
+      <h2>第一次使用：申請會員綁定</h2>
+      <p class="muted">LINE 名稱只供管理員辨識。核准後，系統會使用固定 LINE userId 對應會員。</p>
+      <label>您的會員姓名
+        <input id="claimedName" maxlength="40" autocomplete="name">
+      </label>
+      <button id="bindingButton" type="button">送出綁定申請</button>
+    </section>
+
+    <section id="checkinPanel" class="panel stack hidden">
+      <label>攜伴人數
+        <input id="guestCount" type="number" min="0" max="20" value="0">
+      </label>
+      <label>來賓姓名（多人請用逗號分隔）
+        <input id="guestNames" maxlength="200">
+      </label>
+      <label>備註
+        <textarea id="note" maxlength="300"></textarea>
+      </label>
+      <button id="checkinButton" type="button">確認簽到</button>
+    </section>
+  </main>
+</body>
+</html>
