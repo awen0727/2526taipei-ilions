@@ -251,6 +251,11 @@ function adminCreateEvent_(payload) {
   const termId = cleanText_(payload.termId, 30, "年度 ID");
   if (!findOne_(SHEETS.TERMS, "term_id", termId)) throw new Error("找不到指定年度");
 
+  const recentDuplicate = findRows_(SHEETS.EVENTS, row =>
+    row.name === name && Date.now() - new Date(row.created_at).getTime() < 60000
+  )[0];
+  if (recentDuplicate) throw new Error("這場活動剛剛已建立，請勿重複送出");
+
   findRows_(SHEETS.EVENTS, row => row.status === "open").forEach(event =>
     updateById_(SHEETS.EVENTS, "event_id", event.event_id, { status: "closed" })
   );

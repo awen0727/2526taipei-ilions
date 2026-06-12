@@ -53,6 +53,18 @@
     return ({ open: "簽到開放中", closed: "已關閉", archived: "已封存", active: "在籍", inactive: "已停用" })[status] || status;
   }
 
+  function displayDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("zh-TW", {
+      timeZone: "Asia/Taipei",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(date);
+  }
+
   function currentTermId() {
     const current = state.terms.find(term => term.status === "current") || state.terms[0];
     return current ? current.term_id : "";
@@ -95,7 +107,7 @@
   function renderToday(dashboard) {
     const openEvent = state.events.find(event => event.status === "open");
     document.getElementById("currentEventName").textContent = openEvent ? openEvent.name : "目前沒有開放活動";
-    document.getElementById("currentEventDate").textContent = openEvent ? openEvent.event_date : "可在下方快速建立";
+    document.getElementById("currentEventDate").textContent = openEvent ? displayDate(openEvent.event_date) : "可在下方快速建立";
     document.getElementById("todayMemberCount").textContent = dashboard.memberCount || 0;
     document.getElementById("todayGuestCount").textContent = dashboard.guestCount || 0;
     document.getElementById("pendingCount").textContent = state.bindings.length;
@@ -156,7 +168,7 @@
     state.events.forEach(event => {
       const card = el("article", `manage-card ${event.status === "open" ? "open-card" : ""}`);
       const info = el("div", "manage-card-info");
-      info.append(el("strong", "", event.name), el("span", "muted", `${event.event_date} · ${statusText(event.status)}`));
+      info.append(el("strong", "", event.name), el("span", "muted", `${displayDate(event.event_date)} · ${statusText(event.status)}`));
       const next = event.status === "open" ? "closed" : "open";
       const action = button(next === "open" ? "開放簽到" : "關閉簽到", () =>
         confirmAction(`確定要${next === "open" ? "開放" : "關閉"}「${event.name}」嗎？`, () =>
@@ -194,12 +206,19 @@
   }
 
   async function runAction(action, data) {
+    const controls = [...document.querySelectorAll("button")].filter(control => !control.disabled);
     try {
+      controls.forEach(control => control.disabled = true);
       const result = await post({ action, adminToken: adminToken(), ...data });
       await load();
       setMessage(message, result.message || "操作完成", false);
     } catch (error) {
-      setMessage(message, error.message, true);
+      const hint = error.message === "不支援的操作"
+        ? "Apps Script 尚未部署最新 Code.gs，請建立新版本後再試。"
+        : error.message;
+      setMessage(message, hint, true);
+    } finally {
+      controls.forEach(control => control.disabled = false);
     }
   }
 
