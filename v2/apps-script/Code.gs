@@ -358,7 +358,12 @@ function adminImportLegacyRoster_(payload) {
 
   const headerInfo = detectLegacyHeaders_(values);
   const parsed = values.slice(headerInfo.headerRow + 1).map((row, index) => ({
-    name: cleanText_(row[headerInfo.nameColumn] || "", 40),
+    name: cleanText_(
+      (headerInfo.englishNameColumn >= 0 ? row[headerInfo.englishNameColumn] : "") ||
+      row[headerInfo.nameColumn] || "",
+      40
+    ),
+    matchName: cleanText_(row[headerInfo.nameColumn] || "", 40),
     position: cleanText_(headerInfo.positionColumn >= 0 ? row[headerInfo.positionColumn] || "會員" : "會員", 50),
     sortOrder: index + 1
   })).filter(row => row.name);
@@ -368,6 +373,7 @@ function adminImportLegacyRoster_(payload) {
 
 function detectLegacyHeaders_(values) {
   const nameAliases = ["姓名", "會員姓名", "名字", "name"];
+  const englishNameAliases = ["英文名字", "英文姓名", "英文名", "englishname", "english name"];
   const positionAliases = ["職位", "職稱", "職務", "position", "job"];
   const limit = Math.min(values.length, 10);
   for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
@@ -377,6 +383,7 @@ function detectLegacyHeaders_(values) {
       return {
         headerRow: rowIndex,
         nameColumn,
+        englishNameColumn: headers.findIndex(value => englishNameAliases.map(normalizeName_).includes(value)),
         positionColumn: headers.findIndex(value => positionAliases.map(normalizeName_).includes(value))
       };
     }
@@ -407,7 +414,8 @@ function importMemberRecords_(termId, parsed) {
     uniqueRecords.forEach(item => {
       const normalized = normalizeName_(item.name);
       if (!normalized) return;
-      let member = seen[normalized];
+      const matchNormalized = normalizeName_(item.matchName || item.name);
+      let member = seen[normalized] || seen[matchNormalized];
       if (!member) {
         member = {
           member_id: nextMemberId_(),
@@ -423,6 +431,15 @@ function importMemberRecords_(termId, parsed) {
         seen[normalized] = member;
         created++;
       } else {
+        if (member.name !== item.name) {
+          updateById_(SHEETS.MEMBERS, "member_id", member.member_id, {
+            name: item.name,
+            updated_at: now_()
+          });
+          delete seen[normalizeName_(member.name)];
+          member.name = item.name;
+          seen[normalized] = member;
+        }
         existing++;
       }
 
