@@ -1,5 +1,5 @@
 const SCHEMA = Object.freeze({
-  Members: ["member_id", "name", "status", "join_date", "leave_date", "line_user_id", "created_at", "updated_at"],
+  Members: ["member_id", "name", "chinese_name", "english_name", "status", "join_date", "leave_date", "line_user_id", "line_display_name", "created_at", "updated_at"],
   Terms: ["term_id", "name", "start_date", "end_date", "status"],
   MemberRoles: ["term_id", "member_id", "position", "sort_order"],
   Events: ["event_id", "term_id", "event_date", "name", "status", "created_at"],
@@ -11,7 +11,7 @@ const SCHEMA = Object.freeze({
 
 function setupV2() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  if (!spreadsheet) throw new Error("請從新版測試試算表內執行 setupV2");
+  if (!spreadsheet) throw new Error("請從群愛獅子會簽到試算表內執行 setupV2");
 
   Object.keys(SCHEMA).forEach(name => {
     let sheet = spreadsheet.getSheetByName(name);
@@ -27,6 +27,20 @@ function setupV2() {
   SpreadsheetApp.getUi().alert(
     "V2 資料表已建立。\n接著請在「專案設定 → 指令碼屬性」設定 LINE_CHANNEL_ID、ADMIN_TOKEN、DASHBOARD_TOKEN。"
   );
+}
+
+function migrateMemberColumns() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName("Members");
+  if (!sheet) throw new Error("找不到 Members 分頁");
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  ["chinese_name", "english_name", "line_display_name"].forEach(header => {
+    if (!headers.includes(header)) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(header);
+      headers.push(header);
+    }
+  });
+  sheet.autoResizeColumns(1, sheet.getLastColumn());
 }
 
 function createSampleTerm() {

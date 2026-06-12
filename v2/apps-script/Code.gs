@@ -85,7 +85,9 @@ function getSession_(payload) {
   return {
     member: {
       member_id: member.member_id,
-      name: member.name,
+      name: memberDisplayName_(member),
+      chinese_name: member.chinese_name || "",
+      english_name: member.english_name || "",
       position: role ? role.position : "會員"
     },
     event,
@@ -143,7 +145,7 @@ function checkIn_(payload) {
       attendance_id: attendanceId,
       event_id: event.event_id,
       member_id: member.member_id,
-      name_snapshot: member.name,
+      name_snapshot: memberDisplayName_(member),
       role_snapshot: role ? role.position : "會員",
       checkin_at: now_(),
       source: "LINE",
@@ -162,7 +164,7 @@ function checkIn_(payload) {
       created_at: now_()
     }));
     audit_("check_in", member.member_id, event.event_id, attendanceId);
-    return { message: `${member.name}，簽到成功！` };
+    return { message: `${memberDisplayName_(member)}，簽到成功！` };
   } finally {
     lock.releaseLock();
   }
@@ -186,25 +188,44 @@ function getDashboard_() {
 }
 
 function adminOverview_() {
+  ensureMemberColumns_();
+  const allBindings = rows_(SHEETS.BINDINGS);
+  const members = rows_(SHEETS.MEMBERS).map(member => {
+    const binding = allBindings.find(row =>
+      row.status === "approved" && row.line_user_id === member.line_user_id
+    );
+    return {
+      ...member,
+      display_name: memberDisplayName_(member),
+      line_display_name: member.line_display_name || (binding ? binding.line_display_name : "")
+    };
+  });
   return {
-    members: rows_(SHEETS.MEMBERS),
+    members,
     events: rows_(SHEETS.EVENTS).sort((a, b) => String(b.event_date).localeCompare(String(a.event_date))),
-    bindings: findRows_(SHEETS.BINDINGS, row => row.status === "pending"),
+    bindings: allBindings.filter(row => row.status === "pending"),
+    bindingHistory: allBindings.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
     terms: rows_(SHEETS.TERMS),
     roles: rows_(SHEETS.ROLES)
   };
 }
 
 function adminCreateMember_(payload) {
-  const name = cleanText_(payload.name, 40, "會員姓名");
+  ensureMemberColumns_();
+  const chineseName = cleanText_(payload.chineseName || payload.name, 40, "中文姓名");
+  const englishName = cleanText_(payload.englishName || "", 40);
+  const name = combineNames_(chineseName, englishName);
   const memberId = nextMemberId_();
   append_(SHEETS.MEMBERS, {
     member_id: memberId,
     name,
+    chinese_name: chineseName,
+    english_name: englishName,
     status: "active",
     join_date: cleanDate_(payload.joinDate),
     leave_date: "",
     line_user_id: "",
+    line_display_name: "",
     created_at: now_(),
     updated_at: now_()
   });
@@ -225,6 +246,7 @@ function adminSetMemberStatus_(payload) {
 }
 
 function adminApproveBinding_(payload) {
+  ensureMemberColumns_();
   const request = findOne_(SHEETS.BINDINGS, "request_id", payload.requestId);
   if (!request || request.status !== "pending") throw new Error("找不到待核准申請");
   const member = findOne_(SHEETS.MEMBERS, "member_id", payload.memberId);
@@ -234,6 +256,7 @@ function adminApproveBinding_(payload) {
 
   updateById_(SHEETS.MEMBERS, "member_id", member.member_id, {
     line_user_id: request.line_user_id,
+    line_display_name: request.line_display_name,
     updated_at: now_()
   });
   updateById_(SHEETS.BINDINGS, "request_id", request.request_id, {
@@ -348,6 +371,7 @@ function adminBulkImportMembers_(payload) {
 }
 
 function adminImportLegacyRoster_(payload) {
+  ensureMemberColumns_();
   const termId = cleanText_(payload.termId, 30, "匯入年度");
   if (!findOne_(SHEETS.TERMS, "term_id", termId)) throw new Error("找不到指定年度");
   const legacySheet = SpreadsheetApp.openById(LEGACY_ROSTER.spreadsheetId)
@@ -357,23 +381,24 @@ function adminImportLegacyRoster_(payload) {
   if (values.length < 2) throw new Error("舊版名單沒有可匯入資料");
 
   const headerInfo = detectLegacyHeaders_(values);
-  const parsed = values.slice(headerInfo.headerRow + 1).map((row, index) => ({
-    name: cleanText_(
-      (headerInfo.englishNameColumn >= 0 ? row[headerInfo.englishNameColumn] : "") ||
-      row[headerInfo.nameColumn] || "",
-      40
-    ),
-    matchName: cleanText_(row[headerInfo.nameColumn] || "", 40),
+  const parsed = values.slice(headerInfo.headerRow + 1).map((row, index) => {
+    const chineseName = cleanText_(row[headerInfo.nameColumn] || "", 40);
+    const englishName = cleanText_(headerInfo.englishNameColumn >= 0 ? row[headerInfo.englishNameColumn] || "" : "", 40);
+    return {
+    name: combineNames_(chineseName, englishName),
+    chineseName,
+    englishName,
+    matchName: chineseName,
     position: cleanText_(headerInfo.positionColumn >= 0 ? row[headerInfo.positionColumn] || "會員" : "會員", 50),
     sortOrder: index + 1
-  })).filter(row => row.name);
+  };}).filter(row => row.chineseName);
   if (!parsed.length) throw new Error("舊版名單沒有找到會員姓名");
   return importMemberRecords_(termId, parsed);
 }
 
 function detectLegacyHeaders_(values) {
-  const nameAliases = ["姓名", "會員姓名", "名字", "name"];
-  const englishNameAliases = ["英文名字", "英文姓名", "英文名", "englishname", "english name"];
+  const nameAliases = ["姓名", "會員姓名", "獅友姓名", "中文姓名", "名字", "name"];
+  const englishNameAliases = ["英文名字", "英文姓名", "英文名", "英文名稱", "englishname", "english name", "nickname"];
   const positionAliases = ["職位", "職稱", "職務", "position", "job"];
   const limit = Math.min(values.length, 10);
   for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
@@ -407,7 +432,10 @@ function importMemberRecords_(termId, parsed) {
   try {
     const existingMembers = rows_(SHEETS.MEMBERS);
     const seen = {};
-    existingMembers.forEach(member => seen[normalizeName_(member.name)] = member);
+    existingMembers.forEach(member => {
+      [member.name, member.chinese_name, member.english_name].filter(Boolean)
+        .forEach(value => seen[normalizeName_(value)] = member);
+    });
     let created = 0;
     let existing = 0;
     let rolesSaved = 0;
@@ -415,15 +443,19 @@ function importMemberRecords_(termId, parsed) {
       const normalized = normalizeName_(item.name);
       if (!normalized) return;
       const matchNormalized = normalizeName_(item.matchName || item.name);
-      let member = seen[normalized] || seen[matchNormalized];
+      const englishNormalized = normalizeName_(item.englishName || "");
+      let member = seen[normalized] || seen[matchNormalized] || seen[englishNormalized];
       if (!member) {
         member = {
           member_id: nextMemberId_(),
           name: item.name,
+          chinese_name: item.chineseName || item.name,
+          english_name: item.englishName || "",
           status: "active",
           join_date: "",
           leave_date: "",
           line_user_id: "",
+          line_display_name: "",
           created_at: now_(),
           updated_at: now_()
         };
@@ -431,9 +463,11 @@ function importMemberRecords_(termId, parsed) {
         seen[normalized] = member;
         created++;
       } else {
-        if (member.name !== item.name) {
+        if (member.name !== item.name || member.chinese_name !== item.chineseName || member.english_name !== item.englishName) {
           updateById_(SHEETS.MEMBERS, "member_id", member.member_id, {
             name: item.name,
+            chinese_name: item.chineseName || member.chinese_name || "",
+            english_name: item.englishName || "",
             updated_at: now_()
           });
           delete seen[normalizeName_(member.name)];
@@ -506,6 +540,18 @@ function getRole_(termId, memberId) {
 
 function spreadsheet_() {
   return SpreadsheetApp.openById(property_("SPREADSHEET_ID"));
+}
+
+function ensureMemberColumns_() {
+  const sheet = spreadsheet_().getSheetByName(SHEETS.MEMBERS);
+  if (!sheet) throw new Error("找不到 Members 資料表");
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  ["chinese_name", "english_name", "line_display_name"].forEach(header => {
+    if (!headers.includes(header)) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(header);
+      headers.push(header);
+    }
+  });
 }
 
 function rows_(sheetName) {
@@ -590,6 +636,14 @@ function cleanText_(value, maxLength, label) {
 
 function normalizeName_(value) {
   return String(value || "").replace(/\s+/g, "").toLowerCase();
+}
+
+function combineNames_(chineseName, englishName) {
+  return [String(chineseName || "").trim(), String(englishName || "").trim()].filter(Boolean).join(" ");
+}
+
+function memberDisplayName_(member) {
+  return combineNames_(member.chinese_name, member.english_name) || member.name || "";
 }
 
 function cleanDate_(value, required) {

@@ -11,7 +11,7 @@
 
   async function initialize() {
     try {
-      if (!config.liffId || config.liffId.includes("PASTE_")) throw new Error("尚未設定測試 LIFF ID");
+      if (!config.liffId || config.liffId.includes("PASTE_")) throw new Error("尚未設定 LIFF ID");
       await liff.init({ liffId: config.liffId });
       if (!liff.isLoggedIn()) {
         liff.login();

@@ -1,6 +1,6 @@
-# 群愛獅子會簽到系統 V2 測試版
+# 群愛獅子會簽到系統
 
-此目錄是與現行系統完全分離的測試版。根目錄的舊版 `index.html`、`dashboard.html` 和既有 Apps Script API 均不會被修改。
+此目錄是重新設計的簽到系統。正式切換前，根目錄的舊版 `index.html`、`dashboard.html` 和既有 Apps Script API 均保留不變。
 
 ## V2 解決的問題
 
@@ -19,11 +19,11 @@
 - `admin.html`：新版管理台
 - `apps-script/`：新版 Google Apps Script 後端原始碼
 
-## 建立獨立測試環境
+## 建立獨立環境
 
-### 1. 建立測試 Google Sheet
+### 1. 建立 Google Sheet
 
-請建立一份全新的 Google Sheet，例如「群愛獅子會簽到 V2 測試」，不要使用舊版正式試算表。
+請建立一份全新的 Google Sheet，例如「群愛獅子會簽到管理」，不要直接使用舊版試算表。
 
 在該試算表開啟「擴充功能 → Apps Script」，加入：
 

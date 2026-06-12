@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>群愛獅子會 V2 測試管理台</title>
+  <title>群愛獅子會簽到管理台</title>
   <link rel="stylesheet" href="styles.css">
   <script src="config.js"></script>
   <script src="common.js" defer></script>
@@ -13,7 +13,7 @@
   <header class="admin-header">
     <div>
       <h1>群愛獅子會管理台</h1>
-      <p>V2 測試環境，不影響舊系統</p>
+      <p>會員、活動與年度職位管理</p>
     </div>
     <button id="refreshButton" class="header-button hidden" type="button">重新整理</button>
   </header>
@@ -86,10 +86,10 @@
           <div id="importMembersForm" class="import-panel hidden">
             <div>
               <h3>從舊版名單移植</h3>
-              <p class="muted">可直接唯讀匯入舊試算表的「名單」分頁，顯示名稱優先使用英文名字；英文名字空白時才使用中文姓名。</p>
+              <p class="muted">重新同步中文姓名、英文名與職位，保留會員 ID、LINE 綁定和簽到紀錄。</p>
             </div>
             <label>匯入年度<select id="importTerm"></select></label>
-            <button id="importLegacySheetButton" type="button">從舊版「名單」自動匯入</button>
+            <button id="importLegacySheetButton" type="button">重新同步舊版名單</button>
             <details>
               <summary>或手動貼上姓名、職位</summary>
             <label>舊會員名單
@@ -99,7 +99,8 @@
             </details>
           </div>
           <div id="createMemberForm" class="inline-form hidden">
-            <label>會員姓名<input id="memberName" maxlength="40"></label>
+            <label>中文姓名<input id="memberChineseName" maxlength="40"></label>
+            <label>英文名<input id="memberEnglishName" maxlength="40"></label>
             <label>入會日期<input id="joinDate" type="date"></label>
             <button id="createMemberButton" type="button">確認新增</button>
           </div>
@@ -107,6 +108,14 @@
             <input id="memberSearch" type="search" placeholder="輸入姓名">
           </label>
           <div id="memberCards" class="card-list"></div>
+        </section>
+        <section class="panel">
+          <div class="section-heading">
+            <div><h2>LINE 綁定紀錄</h2><p>顯示已核准與待處理的 LINE 綁定資料。</p></div>
+            <span id="bindingHistoryBadge" class="badge"></span>
+          </div>
+          <div id="bindingHistoryCards" class="card-list"></div>
+          <p id="noBindingHistory" class="empty-state">目前沒有綁定紀錄。</p>
         </section>
       </section>
 

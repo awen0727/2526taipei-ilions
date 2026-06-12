@@ -4,7 +4,7 @@
   const { config, post, get, setMessage } = window.ILionsV2;
   const message = document.getElementById("message");
   const tokenInput = document.getElementById("adminToken");
-  let state = { members: [], events: [], bindings: [], terms: [], roles: [] };
+  let state = { members: [], events: [], bindings: [], bindingHistory: [], terms: [], roles: [] };
 
   tokenInput.value = sessionStorage.getItem("ilionsV2AdminToken") || "";
   document.getElementById("quickEventDate").valueAsDate = new Date();
@@ -36,7 +36,7 @@
     const select = el("select");
     select.appendChild(new Option("請選擇會員", ""));
     state.members.filter(member => member.status === "active").forEach(member => {
-      select.appendChild(new Option(member.name, member.member_id, false, member.member_id === selectedId));
+      select.appendChild(new Option(member.display_name || member.name, member.member_id, false, member.member_id === selectedId));
     });
     return select;
   }
@@ -100,6 +100,7 @@
     document.getElementById("importTerm").value = currentTermId();
     renderBindings();
     renderMembers();
+    renderBindingHistory();
     renderEvents();
     renderRoles();
   }
@@ -147,17 +148,42 @@
     const query = document.getElementById("memberSearch").value.trim().toLowerCase();
     const container = document.getElementById("memberCards");
     container.replaceChildren();
-    state.members.filter(member => !query || member.name.toLowerCase().includes(query)).forEach(member => {
+    state.members.filter(member => {
+      const searchable = [member.display_name, member.chinese_name, member.english_name, member.line_display_name].join(" ").toLowerCase();
+      return !query || searchable.includes(query);
+    }).forEach(member => {
       const card = el("article", "manage-card");
       const info = el("div", "manage-card-info");
-      info.append(el("strong", "", member.name));
-      info.append(el("span", "muted", `${statusText(member.status)} · ${member.line_user_id ? "LINE 已綁定" : "LINE 未綁定"}`));
+      info.append(el("strong", "", member.display_name || member.name));
+      const lineText = member.line_user_id
+        ? `LINE 已綁定：${member.line_display_name || "名稱未記錄"}`
+        : "LINE 未綁定";
+      info.append(el("span", "muted", `${statusText(member.status)} · ${lineText}`));
+      if (member.line_user_id) info.append(el("span", "technical-id", `LINE ID：${member.line_user_id}`));
       const next = member.status === "active" ? "inactive" : "active";
       const action = button(next === "active" ? "重新啟用" : "停用會員", () =>
-        confirmAction(`確定要${next === "active" ? "重新啟用" : "停用"}「${member.name}」嗎？`, () =>
+        confirmAction(`確定要${next === "active" ? "重新啟用" : "停用"}「${member.display_name || member.name}」嗎？`, () =>
           runAction("adminSetMemberStatus", { memberId: member.member_id, status: next })
         ), next === "active" ? "" : "danger");
       card.append(info, action);
+      container.appendChild(card);
+    });
+  }
+
+  function renderBindingHistory() {
+    const container = document.getElementById("bindingHistoryCards");
+    const history = state.bindingHistory || [];
+    container.replaceChildren();
+    document.getElementById("bindingHistoryBadge").textContent = `${history.length} 筆`;
+    document.getElementById("noBindingHistory").classList.toggle("hidden", history.length > 0);
+    history.forEach(binding => {
+      const member = state.members.find(item => item.line_user_id === binding.line_user_id);
+      const card = el("article", "manage-card");
+      const info = el("div", "manage-card-info");
+      info.append(el("strong", "", member ? member.display_name || member.name : binding.claimed_name));
+      info.append(el("span", "muted", `LINE 名稱：${binding.line_display_name || "未記錄"} · ${binding.status === "approved" ? "已核准" : "待核准"}`));
+      info.append(el("span", "technical-id", `LINE ID：${binding.line_user_id}`));
+      card.appendChild(info);
       container.appendChild(card);
     });
   }
@@ -187,7 +213,7 @@
     state.members.filter(member => member.status === "active").forEach(member => {
       const existing = state.roles.find(role => role.term_id === termId && role.member_id === member.member_id);
       const card = el("article", "manage-card role-card");
-      card.appendChild(el("strong", "", member.name));
+      card.appendChild(el("strong", "", member.display_name || member.name));
       const position = el("input");
       position.maxLength = 50;
       position.value = existing ? existing.position : "會員";
@@ -239,17 +265,19 @@
   document.getElementById("showCreateEventButton").addEventListener("click", () => toggleForm("createEventForm"));
   document.getElementById("showCreateTermButton").addEventListener("click", () => toggleForm("createTermForm"));
   document.getElementById("createMemberButton").addEventListener("click", () => runAction("adminCreateMember", {
-    name: document.getElementById("memberName").value.trim(), joinDate: document.getElementById("joinDate").value
+    chineseName: document.getElementById("memberChineseName").value.trim(),
+    englishName: document.getElementById("memberEnglishName").value.trim(),
+    joinDate: document.getElementById("joinDate").value
   }));
   document.getElementById("importMembersButton").addEventListener("click", () => confirmAction(
-    "確定要將貼上的名單匯入 V2 測試資料嗎？舊資料不會被修改。",
+    "確定要將貼上的名單匯入會員資料嗎？",
     () => runAction("adminBulkImportMembers", {
       termId: document.getElementById("importTerm").value,
       text: document.getElementById("importMembersText").value
     })
   ));
   document.getElementById("importLegacySheetButton").addEventListener("click", () => confirmAction(
-    "確定要從舊版試算表的「名單」分頁匯入會員嗎？舊資料不會被修改。",
+    "確定要重新同步舊版「名單」嗎？會員 ID、LINE 綁定與簽到紀錄會保留。",
     () => runAction("adminImportLegacyRoster", {
       termId: document.getElementById("importTerm").value
     })
