@@ -45,7 +45,8 @@ function routePost_(payload) {
     adminCreateEvent: adminCreateEvent_,
     adminSetEventStatus: adminSetEventStatus_,
     adminCreateTerm: adminCreateTerm_,
-    adminSaveRole: adminSaveRole_
+    adminSaveRole: adminSaveRole_,
+    adminBulkImportMembers: adminBulkImportMembers_
   };
 
   if (publicActions[action]) return publicActions[action](payload);
@@ -315,6 +316,81 @@ function adminSaveRole_(payload) {
   return {};
 }
 
+function adminBulkImportMembers_(payload) {
+  const termId = cleanText_(payload.termId, 30, "匯入年度");
+  if (!findOne_(SHEETS.TERMS, "term_id", termId)) throw new Error("找不到指定年度");
+  const text = String(payload.text || "").trim();
+  if (!text) throw new Error("請先貼上舊會員名單");
+
+  const parsed = text.split(/\r?\n/).map(line => {
+    const columns = line.includes("\t") ? line.split("\t") : line.split(/[,，]/);
+    return {
+      name: cleanText_(columns[0] || "", 40),
+      position: cleanText_(columns[1] || "會員", 50)
+    };
+  }).filter(row => row.name && !/^(姓名|會員姓名|name)$/i.test(row.name));
+  if (!parsed.length) throw new Error("沒有找到可匯入的會員資料");
+  if (parsed.length > 300) throw new Error("單次最多匯入 300 位會員");
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const existingMembers = rows_(SHEETS.MEMBERS);
+    const seen = {};
+    existingMembers.forEach(member => seen[normalizeName_(member.name)] = member);
+    let created = 0;
+    let existing = 0;
+    let rolesSaved = 0;
+    const skipped = [];
+
+    parsed.forEach(item => {
+      const normalized = normalizeName_(item.name);
+      if (!normalized) return;
+      let member = seen[normalized];
+      if (!member) {
+        member = {
+          member_id: nextMemberId_(),
+          name: item.name,
+          status: "active",
+          join_date: "",
+          leave_date: "",
+          line_user_id: "",
+          created_at: now_(),
+          updated_at: now_()
+        };
+        append_(SHEETS.MEMBERS, member);
+        seen[normalized] = member;
+        created++;
+      } else {
+        existing++;
+      }
+
+      const role = findRows_(SHEETS.ROLES, row =>
+        row.term_id === termId && row.member_id === member.member_id
+      )[0];
+      if (role) {
+        updateByComposite_(SHEETS.ROLES, { term_id: termId, member_id: member.member_id }, {
+          position: item.position,
+          sort_order: role.sort_order || 100
+        });
+      } else {
+        append_(SHEETS.ROLES, {
+          term_id: termId,
+          member_id: member.member_id,
+          position: item.position,
+          sort_order: 100
+        });
+      }
+      rolesSaved++;
+    });
+
+    audit_("bulk_import_members", "admin", termId, JSON.stringify({ created, existing, rolesSaved, skipped }));
+    return { message: `匯入完成：新增 ${created} 位、更新 ${existing} 位既有會員、儲存 ${rolesSaved} 筆職位。` };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function verifyLineToken_(idToken) {
   if (!idToken) throw new Error("缺少 LINE ID Token");
   const channelId = property_("LINE_CHANNEL_ID");
@@ -432,6 +508,10 @@ function cleanText_(value, maxLength, label) {
   if (label && !text) throw new Error(`${label}不可空白`);
   if (text.length > maxLength) throw new Error(`${label || "文字"}不可超過 ${maxLength} 字`);
   return text;
+}
+
+function normalizeName_(value) {
+  return String(value || "").replace(/\s+/g, "").toLowerCase();
 }
 
 function cleanDate_(value, required) {

@@ -78,7 +78,21 @@
         <section class="panel stack">
           <div class="section-heading">
             <div><h2>會員管理</h2><p>離會會員請停用，不要刪除，歷史紀錄才能保留。</p></div>
-            <button id="showCreateMemberButton" type="button">新增會員</button>
+            <div class="toolbar">
+              <button id="showImportMembersButton" class="secondary" type="button">匯入舊名單</button>
+              <button id="showCreateMemberButton" type="button">新增會員</button>
+            </div>
+          </div>
+          <div id="importMembersForm" class="import-panel hidden">
+            <div>
+              <h3>從舊試算表匯入</h3>
+              <p class="muted">在舊試算表選取「姓名、職位」兩欄並複製，再貼到下方。第一列若是標題會自動略過。</p>
+            </div>
+            <label>匯入年度<select id="importTerm"></select></label>
+            <label>舊會員名單
+              <textarea id="importMembersText" rows="9" placeholder="姓名	職位&#10;王小明	會長&#10;陳大文	秘書"></textarea>
+            </label>
+            <button id="importMembersButton" type="button">開始匯入</button>
           </div>
           <div id="createMemberForm" class="inline-form hidden">
             <label>會員姓名<input id="memberName" maxlength="40"></label>

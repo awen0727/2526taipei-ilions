@@ -82,8 +82,10 @@
     fillTerms(document.getElementById("eventTerm"));
     fillTerms(document.getElementById("sourceTerm"), true);
     fillTerms(document.getElementById("roleTerm"));
+    fillTerms(document.getElementById("importTerm"));
     document.getElementById("quickEventTerm").value = currentTermId();
     document.getElementById("eventTerm").value = currentTermId();
+    document.getElementById("importTerm").value = currentTermId();
     renderBindings();
     renderMembers();
     renderEvents();
@@ -193,9 +195,9 @@
 
   async function runAction(action, data) {
     try {
-      await post({ action, adminToken: adminToken(), ...data });
+      const result = await post({ action, adminToken: adminToken(), ...data });
       await load();
-      setMessage(message, "操作完成", false);
+      setMessage(message, result.message || "操作完成", false);
     } catch (error) {
       setMessage(message, error.message, true);
     }
@@ -214,11 +216,19 @@
   document.getElementById("memberSearch").addEventListener("input", renderMembers);
   document.getElementById("roleTerm").addEventListener("change", renderRoles);
   document.getElementById("showCreateMemberButton").addEventListener("click", () => toggleForm("createMemberForm"));
+  document.getElementById("showImportMembersButton").addEventListener("click", () => toggleForm("importMembersForm"));
   document.getElementById("showCreateEventButton").addEventListener("click", () => toggleForm("createEventForm"));
   document.getElementById("showCreateTermButton").addEventListener("click", () => toggleForm("createTermForm"));
   document.getElementById("createMemberButton").addEventListener("click", () => runAction("adminCreateMember", {
     name: document.getElementById("memberName").value.trim(), joinDate: document.getElementById("joinDate").value
   }));
+  document.getElementById("importMembersButton").addEventListener("click", () => confirmAction(
+    "確定要將貼上的名單匯入 V2 測試資料嗎？舊資料不會被修改。",
+    () => runAction("adminBulkImportMembers", {
+      termId: document.getElementById("importTerm").value,
+      text: document.getElementById("importMembersText").value
+    })
+  ));
   function createEvent(prefix) {
     const stem = prefix ? `${prefix}Event` : "event";
     return runAction("adminCreateEvent", {

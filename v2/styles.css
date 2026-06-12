@@ -107,6 +107,9 @@ th { background: #faf6e8; }
 .section-heading button { width: auto; }
 .inline-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; padding: 14px; border-radius: 10px; background: #faf6e8; }
 .inline-form button { align-self: end; }
+.import-panel { display: grid; gap: 12px; padding: 16px; border: 2px dashed #d2b75f; border-radius: 10px; background: #fffdf5; }
+.import-panel h3, .import-panel p { margin: 0; }
+.import-panel textarea { min-height: 180px; font-family: ui-monospace, monospace; }
 .card-list { display: grid; gap: 10px; margin-top: 12px; }
 .manage-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #e2e2e2; border-radius: 10px; background: white; }
 .manage-card.open-card { border-left: 6px solid var(--success); }
