@@ -1,5 +1,5 @@
 window.ILIONS_V2_CONFIG = {
-  apiUrl: "https://script.google.com/macros/s/AKfycbyoBrNwrRYv0XTLS92CeXNAj6QCU-r7PwmFl1-g-I1_lWAtcEyISyfmdAy0T5x4Txeu/exec",
+  apiUrl: "https://script.google.com/macros/s/AKfycby5G6byyuvubWWtYC8Fp9fmjj7gE5T2hvCW9QXmHsP3H72QTxvK4rrBelLZH4Z1MLat/exec",
   liffId: "2010373009-hrgqoUsM",
   dashboardToken: "ilions-v2-test-dashboard-2026"
 };
