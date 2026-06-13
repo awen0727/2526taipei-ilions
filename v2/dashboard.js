@@ -28,10 +28,11 @@
       people.replaceChildren();
       result.list.forEach((person) => {
         const card = document.createElement("article");
-        card.className = "person-card";
+        card.className = `person-card ${person.type === "guest" ? "guest-card" : "member-card"}`;
         addText(card, "role", person.position || "會員");
         addText(card, "name", person.name);
-        if (person.guest_count) addText(card, "muted", `攜伴 ${person.guest_count} 位`);
+        if (person.type === "guest" && person.host_name) addText(card, "card-detail", `介紹人：${person.host_name}`);
+        if (person.registration_note) addText(card, "card-detail", person.registration_note);
         people.appendChild(card);
       });
       setMessage(message, "", false);

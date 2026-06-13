@@ -182,17 +182,77 @@ function getDashboard_() {
   const event = getOpenEvent_();
   if (!event) return { event: null, memberCount: 0, guestCount: 0, list: [] };
   const records = findRows_(SHEETS.ATTENDANCE, row => row.event_id === event.event_id);
-  return {
-    event,
-    memberCount: records.length,
-    guestCount: records.reduce((sum, row) => sum + Number(row.guest_count || 0), 0),
-    list: records.map(row => ({
-      name: row.name_snapshot,
+  const guests = findRows_(SHEETS.GUESTS, row => row.event_id === event.event_id);
+  const members = rows_(SHEETS.MEMBERS);
+  const checkedMemberIds = {};
+  const memberCards = records.map(row => {
+    checkedMemberIds[row.member_id] = true;
+    const member = members.find(item => item.member_id === row.member_id);
+    return {
+      type: "member",
+      name: member ? memberDisplayName_(member) : row.name_snapshot,
       position: row.role_snapshot,
       guest_count: Number(row.guest_count || 0),
       checkin_at: row.checkin_at
-    }))
+    };
+  });
+  const guestCards = [];
+  guests.forEach(guest => {
+    const matchingMembers = members.filter(member =>
+      member.status === "active" && memberMatchesName_(member, guest.name)
+    );
+    if (matchingMembers.length === 1) {
+      const member = matchingMembers[0];
+      if (checkedMemberIds[member.member_id]) return;
+      checkedMemberIds[member.member_id] = true;
+      const role = getRole_(event.term_id, member.member_id);
+      memberCards.push({
+        type: "member",
+        name: memberDisplayName_(member),
+        position: role ? role.position : "會員",
+        guest_count: 0,
+        checkin_at: guest.created_at,
+        registration_note: "由會員攜伴名單辨識"
+      });
+      return;
+    }
+    guestCards.push({
+      type: "guest",
+      name: guest.name || "未填姓名來賓",
+      position: guest.type || "來賓",
+      host_name: hostDisplayName_(members, guest.host_member_id),
+      checkin_at: guest.created_at
+    });
+  });
+  const totalDeclaredGuests = records.reduce((sum, row) => sum + Number(row.guest_count || 0), 0);
+  const unnamedGuestCount = Math.max(0, totalDeclaredGuests - guests.length);
+  for (let index = 0; index < unnamedGuestCount; index++) {
+    guestCards.push({
+      type: "guest",
+      name: "未填姓名來賓",
+      position: "來賓",
+      host_name: "",
+      checkin_at: ""
+    });
+  }
+  return {
+    event,
+    memberCount: memberCards.length,
+    guestCount: guestCards.length,
+    list: memberCards.concat(guestCards)
   };
+}
+
+function memberMatchesName_(member, name) {
+  const target = normalizeName_(name);
+  return target && [member.name, member.chinese_name, member.english_name, memberDisplayName_(member)]
+    .filter(Boolean)
+    .some(value => normalizeName_(value) === target);
+}
+
+function hostDisplayName_(members, memberId) {
+  const member = members.find(item => item.member_id === memberId);
+  return member ? memberDisplayName_(member) : "";
 }
 
 function adminOverview_() {

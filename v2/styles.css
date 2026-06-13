@@ -70,6 +70,9 @@ th { background: #faf6e8; }
 .person-card { padding: 14px; border-left: 6px solid var(--gold-light); border-radius: 8px; background: #252525; color: white; }
 .person-card .role { color: var(--gold-light); font-size: .9rem; }
 .person-card .name { font-size: 1.45rem; font-weight: 900; }
+.person-card.guest-card { border-left-color: #42a5f5; }
+.person-card.guest-card .role { color: #64b5f6; }
+.person-card .card-detail { margin-top: 5px; color: #ccc; font-size: .82rem; }
 .stats { display: flex; gap: 12px; flex-wrap: wrap; }
 .stat { min-width: 120px; padding: 12px; border-radius: 8px; background: white; text-align: center; }
 .stat strong { display: block; font-size: 2rem; color: var(--gold); }
