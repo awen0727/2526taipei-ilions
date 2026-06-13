@@ -67,7 +67,10 @@
         <section class="panel">
           <div class="section-heading">
             <div><h2>待核准 LINE 綁定</h2><p>確認申請人身分後，選擇對應會員。</p></div>
-            <span id="bindingBadge" class="badge"></span>
+            <div class="toolbar">
+              <button id="autoApproveBindingsButton" class="secondary" type="button">依預填 LINE 名稱自動核准</button>
+              <span id="bindingBadge" class="badge"></span>
+            </div>
           </div>
           <div id="bindingCards" class="card-list"></div>
           <p id="noBindings" class="empty-state">目前沒有待核准申請。</p>

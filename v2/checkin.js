@@ -52,9 +52,9 @@
       button.disabled = true;
       const claimedName = document.getElementById("claimedName").value.trim();
       if (!claimedName) throw new Error("請輸入會員姓名");
-      await post({ action: "requestBinding", idToken, claimedName });
+      const result = await post({ action: "requestBinding", idToken, claimedName });
       document.getElementById("bindingPanel").classList.add("hidden");
-      setMessage(message, "綁定申請已送出，請等待管理員核准。", false);
+      setMessage(message, result.autoApproved ? `${result.message}\n請重新整理後簽到。` : result.message, false);
     } catch (error) {
       setMessage(message, error.message, true);
     } finally {

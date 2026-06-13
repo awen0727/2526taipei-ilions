@@ -260,6 +260,10 @@
   }));
   document.getElementById("memberSearch").addEventListener("input", renderMembers);
   document.getElementById("roleTerm").addEventListener("change", renderRoles);
+  document.getElementById("autoApproveBindingsButton").addEventListener("click", () => confirmAction(
+    "只會自動核准 LINE 名稱完全相同且唯一的會員；同名或不明資料會保留人工確認。確定執行嗎？",
+    () => runAction("adminAutoApproveBindings", {})
+  ));
   document.getElementById("showCreateMemberButton").addEventListener("click", () => toggleForm("createMemberForm"));
   document.getElementById("showImportMembersButton").addEventListener("click", () => toggleForm("importMembersForm"));
   document.getElementById("showCreateEventButton").addEventListener("click", () => toggleForm("createEventForm"));
@@ -292,9 +296,11 @@
         `所有欄位：${result.headers.join("、")}`,
         `中文姓名欄：${result.detected.name || "未辨識"}`,
         `英文姓名欄：${result.detected.englishName || "未辨識"}`,
+        `LINE 名稱欄：${result.detected.lineName || "未辨識"}`,
         `職位欄：${result.detected.position || "未辨識"}`,
         `中文姓名非空白：${result.nonEmptyNameCount} 筆`,
-        `英文姓名非空白：${result.nonEmptyEnglishNameCount} 筆`
+        `英文姓名非空白：${result.nonEmptyEnglishNameCount} 筆`,
+        `LINE 名稱非空白：${result.nonEmptyLineNameCount} 筆`
       ].forEach(text => output.appendChild(el("div", "", text)));
       output.classList.remove("hidden");
     } catch (error) {

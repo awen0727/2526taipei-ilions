@@ -53,7 +53,8 @@ function routePost_(payload) {
     adminSaveRole: adminSaveRole_,
     adminBulkImportMembers: adminBulkImportMembers_,
     adminImportLegacyRoster: adminImportLegacyRoster_,
-    adminInspectLegacyRoster: adminInspectLegacyRoster_
+    adminInspectLegacyRoster: adminInspectLegacyRoster_,
+    adminAutoApproveBindings: adminAutoApproveBindings_
   };
 
   if (publicActions[action]) return publicActions[action](payload);
@@ -108,10 +109,12 @@ function requestBinding_(payload) {
   )[0];
   if (pending) throw new Error("綁定申請已送出，請等待管理員核准");
 
+  const requestId = id_("BR");
+  const lineDisplayName = cleanText_(line.name || "", 80);
   append_(SHEETS.BINDINGS, {
-    request_id: id_("BR"),
+    request_id: requestId,
     line_user_id: line.sub,
-    line_display_name: cleanText_(line.name || "", 80),
+    line_display_name: lineDisplayName,
     claimed_name: claimedName,
     status: "pending",
     created_at: now_(),
@@ -119,7 +122,10 @@ function requestBinding_(payload) {
     resolved_by: ""
   });
   audit_("request_binding", line.sub, claimedName, "");
-  return { message: "綁定申請已送出" };
+  const matched = autoApproveBindingByLineName_(requestId);
+  return matched
+    ? { message: `已依 LINE 名稱自動綁定：${memberDisplayName_(matched)}`, autoApproved: true }
+    : { message: "綁定申請已送出，請等待管理員核准", autoApproved: false };
 }
 
 function checkIn_(payload) {
@@ -269,6 +275,42 @@ function adminApproveBinding_(payload) {
   return {};
 }
 
+function adminAutoApproveBindings_() {
+  ensureMemberColumns_();
+  const pending = findRows_(SHEETS.BINDINGS, row => row.status === "pending");
+  let approved = 0;
+  pending.forEach(request => {
+    if (autoApproveBindingByLineName_(request.request_id)) approved++;
+  });
+  return { message: `自動核准完成：成功綁定 ${approved} 筆，其他申請仍需人工確認。` };
+}
+
+function autoApproveBindingByLineName_(requestId) {
+  const request = findOne_(SHEETS.BINDINGS, "request_id", requestId);
+  if (!request || request.status !== "pending") return null;
+  const target = normalizeName_(request.line_display_name);
+  if (!target) return null;
+  const matches = findRows_(SHEETS.MEMBERS, row =>
+    row.status === "active" &&
+    !row.line_user_id &&
+    normalizeName_(row.line_display_name) === target
+  );
+  if (matches.length !== 1) return null;
+  const member = matches[0];
+  updateById_(SHEETS.MEMBERS, "member_id", member.member_id, {
+    line_user_id: request.line_user_id,
+    line_display_name: request.line_display_name,
+    updated_at: now_()
+  });
+  updateById_(SHEETS.BINDINGS, "request_id", request.request_id, {
+    status: "approved",
+    resolved_at: now_(),
+    resolved_by: "line_name_auto_match"
+  });
+  audit_("auto_approve_binding", "system", member.member_id, request.request_id);
+  return member;
+}
+
 function adminCreateEvent_(payload) {
   const name = cleanText_(payload.name, 80, "活動名稱");
   const eventDate = cleanDate_(payload.eventDate, true);
@@ -390,6 +432,7 @@ function adminImportLegacyRoster_(payload) {
     chineseName,
     englishName,
     matchName: chineseName,
+    lineDisplayName: cleanText_(headerInfo.lineNameColumn >= 0 ? row[headerInfo.lineNameColumn] || "" : "", 80),
     position: cleanText_(headerInfo.positionColumn >= 0 ? row[headerInfo.positionColumn] || "會員" : "會員", 50),
     sortOrder: index + 1
   };}).filter(row => row.chineseName);
@@ -412,11 +455,15 @@ function adminInspectLegacyRoster_() {
     nonEmptyEnglishNameCount: headerInfo.englishNameColumn >= 0
       ? dataRows.filter(row => String(row[headerInfo.englishNameColumn] || "").trim()).length
       : 0,
+    nonEmptyLineNameCount: headerInfo.lineNameColumn >= 0
+      ? dataRows.filter(row => String(row[headerInfo.lineNameColumn] || "").trim()).length
+      : 0,
     headerRow: headerInfo.headerRow + 1,
     headers,
     detected: {
       name: headers[headerInfo.nameColumn] || "",
       englishName: headerInfo.englishNameColumn >= 0 ? headers[headerInfo.englishNameColumn] : "",
+      lineName: headerInfo.lineNameColumn >= 0 ? headers[headerInfo.lineNameColumn] : "",
       position: headerInfo.positionColumn >= 0 ? headers[headerInfo.positionColumn] : ""
     }
   };
@@ -428,6 +475,9 @@ function detectLegacyHeaders_(values) {
     "英文名字", "英文姓名", "英文名", "英文名稱", "英文", "英文稱呼",
     "englishname", "english name", "english", "nickname", "nick name"
   ];
+  const lineNameAliases = [
+    "line名稱", "line名字", "line姓名", "line暱稱", "line name", "linename", "line"
+  ];
   const positionAliases = ["職位", "職稱", "職務", "position", "job"];
   const limit = Math.min(values.length, 10);
   for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
@@ -438,6 +488,7 @@ function detectLegacyHeaders_(values) {
         headerRow: rowIndex,
         nameColumn,
         englishNameColumn: headers.findIndex(value => englishNameAliases.map(normalizeName_).includes(value)),
+        lineNameColumn: headers.findIndex(value => lineNameAliases.map(normalizeName_).includes(value)),
         positionColumn: headers.findIndex(value => positionAliases.map(normalizeName_).includes(value))
       };
     }
@@ -484,7 +535,7 @@ function importMemberRecords_(termId, parsed) {
           join_date: "",
           leave_date: "",
           line_user_id: "",
-          line_display_name: "",
+          line_display_name: item.lineDisplayName || "",
           created_at: now_(),
           updated_at: now_()
         };
@@ -497,6 +548,7 @@ function importMemberRecords_(termId, parsed) {
             name: item.name,
             chinese_name: item.chineseName || member.chinese_name || "",
             english_name: item.englishName || "",
+            line_display_name: item.lineDisplayName || member.line_display_name || "",
             updated_at: now_()
           });
           delete seen[normalizeName_(member.name)];
