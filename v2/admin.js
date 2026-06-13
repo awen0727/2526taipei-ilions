@@ -271,6 +271,10 @@
   document.getElementById("createMemberButton").addEventListener("click", () => runAction("adminCreateMember", {
     chineseName: document.getElementById("memberChineseName").value.trim(),
     englishName: document.getElementById("memberEnglishName").value.trim(),
+    name: [
+      document.getElementById("memberChineseName").value.trim(),
+      document.getElementById("memberEnglishName").value.trim()
+    ].filter(Boolean).join(" "),
     joinDate: document.getElementById("joinDate").value
   }));
   document.getElementById("importMembersButton").addEventListener("click", () => confirmAction(
