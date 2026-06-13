@@ -224,9 +224,10 @@
       order.max = "999";
       order.value = existing ? existing.sort_order : "100";
       order.title = "顯示順序";
-      card.append(position, order, button("儲存", () => runAction("adminSaveRole", {
-        termId, memberId: member.member_id, position: position.value.trim(), sortOrder: Number(order.value || 100)
-      })));
+      card.dataset.memberId = member.member_id;
+      position.className = "role-position";
+      order.className = "role-order";
+      card.append(position, order);
       container.appendChild(card);
     });
   }
@@ -260,6 +261,20 @@
   }));
   document.getElementById("memberSearch").addEventListener("input", renderMembers);
   document.getElementById("roleTerm").addEventListener("change", renderRoles);
+  document.getElementById("saveAllRolesButton").addEventListener("click", () => confirmAction(
+    "確定儲存目前年度的全部職位設定嗎？",
+    () => {
+      const roles = [...document.querySelectorAll("#roleCards .role-card")].map(card => ({
+        memberId: card.dataset.memberId,
+        position: card.querySelector(".role-position").value.trim(),
+        sortOrder: Number(card.querySelector(".role-order").value || 100)
+      }));
+      runAction("adminSaveRolesBatch", {
+        termId: document.getElementById("roleTerm").value,
+        roles
+      });
+    }
+  ));
   document.getElementById("autoApproveBindingsButton").addEventListener("click", () => confirmAction(
     "只會自動核准 LINE 名稱完全相同且唯一的會員；同名或不明資料會保留人工確認。確定執行嗎？",
     () => runAction("adminAutoApproveBindings", {})

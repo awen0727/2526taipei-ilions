@@ -122,7 +122,9 @@ th { background: #faf6e8; }
 .manage-card-actions { display: flex; align-items: center; gap: 8px; }
 .manage-card-actions select { min-width: 180px; }
 .manage-card button { width: auto; white-space: nowrap; }
-.role-card { display: grid; grid-template-columns: minmax(120px, 1fr) 1.5fr 80px auto; }
+.role-card { display: grid; grid-template-columns: minmax(120px, 1fr) 1.5fr 80px; }
+.sticky-save-bar { position: sticky; bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #dfce94; border-radius: 10px; background: #fff9e6; box-shadow: 0 3px 14px rgba(0,0,0,.12); }
+.sticky-save-bar button { width: auto; }
 .empty-state { padding: 24px; text-align: center; color: var(--muted); }
 @media (max-width: 640px) {
   main { width: min(100% - 18px, 1100px); margin: 12px auto; }
@@ -135,4 +137,6 @@ th { background: #faf6e8; }
   .section-heading, .manage-card, .manage-card-actions { align-items: stretch; flex-direction: column; }
   .section-heading button, .manage-card button { width: 100%; }
   .role-card { grid-template-columns: 1fr; }
+  .sticky-save-bar { align-items: stretch; flex-direction: column; }
+  .sticky-save-bar button { width: 100%; }
 }

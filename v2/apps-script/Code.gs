@@ -51,6 +51,7 @@ function routePost_(payload) {
     adminSetEventStatus: adminSetEventStatus_,
     adminCreateTerm: adminCreateTerm_,
     adminSaveRole: adminSaveRole_,
+    adminSaveRolesBatch: adminSaveRolesBatch_,
     adminBulkImportMembers: adminBulkImportMembers_,
     adminImportLegacyRoster: adminImportLegacyRoster_,
     adminInspectLegacyRoster: adminInspectLegacyRoster_,
@@ -391,6 +392,40 @@ function adminSaveRole_(payload) {
   }
   audit_("save_role", "admin", `${termId}/${memberId}`, position);
   return {};
+}
+
+function adminSaveRolesBatch_(payload) {
+  const termId = cleanText_(payload.termId, 30, "年度 ID");
+  if (!findOne_(SHEETS.TERMS, "term_id", termId)) throw new Error("找不到指定年度");
+  const roles = Array.isArray(payload.roles) ? payload.roles : [];
+  if (!roles.length) throw new Error("沒有可儲存的職位資料");
+  if (roles.length > 300) throw new Error("單次最多儲存 300 筆職位");
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    roles.forEach(item => {
+      const memberId = cleanText_(item.memberId, 30, "會員 ID");
+      const position = cleanText_(item.position, 50, "職位");
+      const sortOrder = integer_(item.sortOrder, 1, 999, "顯示順序");
+      if (!findOne_(SHEETS.MEMBERS, "member_id", memberId)) throw new Error(`找不到會員：${memberId}`);
+      const existing = findRows_(SHEETS.ROLES, row =>
+        row.term_id === termId && row.member_id === memberId
+      )[0];
+      if (existing) {
+        updateByComposite_(SHEETS.ROLES, { term_id: termId, member_id: memberId }, {
+          position,
+          sort_order: sortOrder
+        });
+      } else {
+        append_(SHEETS.ROLES, { term_id: termId, member_id: memberId, position, sort_order: sortOrder });
+      }
+    });
+    audit_("save_roles_batch", "admin", termId, `${roles.length} roles`);
+    return { message: `已儲存 ${roles.length} 位會員的年度職位。` };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function adminBulkImportMembers_(payload) {
