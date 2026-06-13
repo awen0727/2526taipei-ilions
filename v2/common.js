@@ -23,7 +23,10 @@
     } catch (error) {
       throw new Error("後端回應格式不正確，請確認 Apps Script 已建立新版本並重新部署");
     }
-    if (!result.ok) throw new Error(result.error || "API 操作失敗");
+    if (!result.ok) {
+      const version = result.apiVersion ? `\nAPI 版本：${result.apiVersion}` : "";
+      throw new Error(`${result.error || "API 操作失敗"}${version}`);
+    }
     return result;
   }
 
@@ -39,7 +42,10 @@
     } catch (error) {
       throw new Error("後端回應格式不正確，請確認 Apps Script 部署狀態");
     }
-    if (!result.ok) throw new Error(result.error || "API 操作失敗");
+    if (!result.ok) {
+      const version = result.apiVersion ? `\nAPI 版本：${result.apiVersion}` : "";
+      throw new Error(`${result.error || "API 操作失敗"}${version}`);
+    }
     return result;
   }
 

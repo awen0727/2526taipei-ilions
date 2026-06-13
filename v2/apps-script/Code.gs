@@ -14,14 +14,17 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
+const API_VERSION = "2026-06-13-line-auth-diagnostics-1";
+
 function doGet(e) {
   try {
     const action = String((e && e.parameter && e.parameter.action) || "");
+    if (action === "health") return json_({ ok: true, ...getHealth_() });
     if (action !== "dashboard") throw new Error("不支援的 GET 操作");
     requireDashboardToken_(e.parameter.token);
-    return json_({ ok: true, ...getDashboard_() });
+    return json_({ ok: true, apiVersion: API_VERSION, ...getDashboard_() });
   } catch (error) {
-    return json_({ ok: false, error: error.message });
+    return json_({ ok: false, error: error.message, apiVersion: API_VERSION });
   }
 }
 
@@ -29,10 +32,19 @@ function doPost(e) {
   try {
     const payload = JSON.parse((e && e.postData && e.postData.contents) || "{}");
     const result = routePost_(payload);
-    return json_({ ok: true, ...result });
+    return json_({ ok: true, apiVersion: API_VERSION, ...result });
   } catch (error) {
-    return json_({ ok: false, error: error.message });
+    return json_({ ok: false, error: error.message, apiVersion: API_VERSION });
   }
+}
+
+function getHealth_() {
+  const properties = PropertiesService.getScriptProperties();
+  return {
+    apiVersion: API_VERSION,
+    lineChannelId: properties.getProperty("LINE_CHANNEL_ID") || "",
+    spreadsheetConfigured: Boolean(properties.getProperty("SPREADSHEET_ID"))
+  };
 }
 
 function routePost_(payload) {

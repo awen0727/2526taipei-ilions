@@ -56,6 +56,15 @@
 
 `SPREADSHEET_ID` 會由 `setupV2()` 自動設定。
 
+部署後可開啟以下網址確認目前線上版本與 LINE Login Channel ID：
+
+```text
+你的 Apps Script 網址?action=health
+```
+
+`lineChannelId` 必須是 LIFF 所屬 LINE Login Channel「Basic settings」頁面的 Channel ID，
+不是 LIFF ID，也不是 Messaging API Channel ID。
+
 ### 3. 部署新版 Apps Script
 
 選擇「部署 → 新增部署作業 → 網頁應用程式」：
