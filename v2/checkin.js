@@ -3,10 +3,38 @@
 
   const { config, post, setMessage } = window.ILionsV2;
   const message = document.getElementById("message");
+  const RELOGIN_KEY = "ilions-v2-line-relogin-at";
   let idToken = "";
 
   function show(id) {
     document.getElementById(id).classList.remove("hidden");
+  }
+
+  function tokenIsExpired() {
+    const decoded = liff.getDecodedIDToken();
+    return !decoded || !decoded.exp || decoded.exp <= Math.floor(Date.now() / 1000) + 60;
+  }
+
+  function relogin() {
+    const lastRelogin = Number(sessionStorage.getItem(RELOGIN_KEY) || 0);
+    if (Date.now() - lastRelogin < 120000) {
+      throw new Error("LINE 登入憑證仍然過期，請關閉此頁後重新從 LINE 開啟簽到連結。");
+    }
+    sessionStorage.setItem(RELOGIN_KEY, String(Date.now()));
+    liff.logout();
+    liff.login({ redirectUri: window.location.href });
+  }
+
+  async function loadSession() {
+    try {
+      return await post({ action: "getSession", idToken });
+    } catch (error) {
+      if (/IdToken expired/i.test(error.message)) {
+        relogin();
+        return null;
+      }
+      throw error;
+    }
   }
 
   async function initialize() {
@@ -20,13 +48,19 @@
 
       idToken = liff.getIDToken();
       if (!idToken) throw new Error("無法取得 LINE ID Token，請確認 LIFF 已啟用 openid scope");
+      if (tokenIsExpired()) {
+        relogin();
+        return;
+      }
 
       const profile = await liff.getProfile();
       document.getElementById("lineName").textContent = profile.displayName || "LINE 使用者";
       if (profile.pictureUrl) document.getElementById("profileImage").src = profile.pictureUrl;
       show("profile");
 
-      const session = await post({ action: "getSession", idToken });
+      const session = await loadSession();
+      if (!session) return;
+      sessionStorage.removeItem(RELOGIN_KEY);
       document.getElementById("eventInfo").textContent = session.event
         ? `目前活動：${session.event.name}（${session.event.event_date}）`
         : "目前沒有開放簽到的活動";
