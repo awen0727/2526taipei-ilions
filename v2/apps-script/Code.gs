@@ -682,15 +682,39 @@ function importMemberRecords_(termId, parsed) {
 function verifyLineToken_(idToken) {
   if (!idToken) throw new Error("缺少 LINE ID Token");
   const channelId = property_("LINE_CHANNEL_ID");
+  const tokenPayload = decodeJwtPayload_(idToken);
   const response = UrlFetchApp.fetch("https://api.line.me/oauth2/v2.1/verify", {
     method: "post",
     payload: { id_token: idToken, client_id: channelId },
     muteHttpExceptions: true
   });
-  if (response.getResponseCode() !== 200) throw new Error("LINE 身分驗證失敗");
+  if (response.getResponseCode() !== 200) {
+    let description = "";
+    try {
+      const errorBody = JSON.parse(response.getContentText());
+      description = errorBody.error_description || errorBody.error || "";
+    } catch (error) {
+      description = "";
+    }
+    const audience = tokenPayload.aud || "無法判斷";
+    throw new Error(
+      `LINE 身分驗證失敗${description ? `：${description}` : ""}。` +
+      `Token Channel ID：${audience}；Apps Script LINE_CHANNEL_ID：${channelId}`
+    );
+  }
   const result = JSON.parse(response.getContentText());
   if (!result.sub) throw new Error("LINE Token 缺少使用者識別碼");
   return result;
+}
+
+function decodeJwtPayload_(token) {
+  try {
+    const parts = String(token).split(".");
+    if (parts.length !== 3) return {};
+    return JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1])).getDataAsString());
+  } catch (error) {
+    return {};
+  }
 }
 
 function requireAdmin_(token) {
