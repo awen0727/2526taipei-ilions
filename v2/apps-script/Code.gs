@@ -14,7 +14,7 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-14-manual-checkin-1";
+const API_VERSION = "2026-06-14-report-role-order-1";
 
 function doGet(e) {
   try {
@@ -332,12 +332,13 @@ function adminAttendanceReport_(payload) {
         name: memberDisplayName_(member),
         member_status: member.status,
         position: roleByMember[member.member_id] ? roleByMember[member.member_id].position : "會員",
+        sort_order: Number(roleByMember[member.member_id] ? roleByMember[member.member_id].sort_order : 999),
         attended_count: attendedCount,
         absent_count: Math.max(0, events.length - attendedCount),
         attendance_rate: events.length ? Math.round(attendedCount / events.length * 1000) / 10 : 0
       };
     })
-    .sort((a, b) => b.attended_count - a.attended_count || a.name.localeCompare(b.name));
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
 
   const eventSummaries = events.map(event => ({
     ...event,
@@ -403,7 +404,11 @@ function adminAttendanceReport_(payload) {
         guest_count: record ? Number(record.guest_count || 0) : 0,
         note: record ? record.note : ""
       };
-    }).sort((a, b) => Number(b.attended) - Number(a.attended) || a.name.localeCompare(b.name))
+    }).sort((a, b) =>
+      Number(b.attended) - Number(a.attended)
+      || a.sort_order - b.sort_order
+      || a.name.localeCompare(b.name)
+    )
   };
 }
 
