@@ -92,6 +92,23 @@
     });
   }
 
+  function renderGuests() {
+    const guests = report.selectedEventGuests || [];
+    const rows = document.getElementById("guestRows");
+    rows.replaceChildren();
+    document.getElementById("guestBadge").textContent = `${guests.length} 位`;
+    document.getElementById("noGuests").classList.toggle("hidden", guests.length > 0);
+    guests.forEach(guest => {
+      const row = document.createElement("tr");
+      addCell(row, guest.name);
+      addCell(row, guest.type);
+      addCell(row, guest.host_name || "");
+      addCell(row, guest.created_at ? formatDateTime(guest.created_at) : "");
+      addCell(row, guest.note || "");
+      rows.appendChild(row);
+    });
+  }
+
   async function load(options) {
     try {
       const result = await post({
@@ -104,6 +121,7 @@
       fillFilters();
       renderSummary();
       renderEvent();
+      renderGuests();
       document.getElementById("loginPanel").classList.add("hidden");
       document.getElementById("reportApp").classList.remove("hidden");
       setMessage(message, "", false);

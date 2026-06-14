@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css?v=20260614-1">
   <script src="config.js?v=20260614-2"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="attendance.js?v=20260614-2" defer></script>
+  <script src="attendance.js?v=20260614-3" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -47,6 +47,20 @@
         <article class="summary-card"><span>統計會員</span><strong id="memberCount">0</strong></article>
         <article class="summary-card"><span>總出席人次</span><strong id="attendanceCount">0</strong></article>
         <article class="summary-card"><span>平均每場出席</span><strong id="averageAttendance">0</strong></article>
+      </section>
+
+      <section class="panel stack">
+        <div class="section-heading">
+          <div><h2>當次來賓名單</h2><p>包含未填姓名的攜伴人數。</p></div>
+          <span id="guestBadge" class="badge"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>來賓姓名</th><th>類型</th><th>介紹會員</th><th>登記時間</th><th>備註</th></tr></thead>
+            <tbody id="guestRows"></tbody>
+          </table>
+        </div>
+        <p id="noGuests" class="empty-state hidden">本次活動沒有來賓。</p>
       </section>
 
       <section class="panel stack">

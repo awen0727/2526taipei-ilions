@@ -14,7 +14,7 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-14-attendance-report-1";
+const API_VERSION = "2026-06-14-guest-report-1";
 
 function doGet(e) {
   try {
@@ -313,7 +313,8 @@ function adminAttendanceReport_(payload) {
   const attendanceMemberIds = {};
   attendance.forEach(row => { attendanceMemberIds[row.member_id] = true; });
 
-  const members = rows_(SHEETS.MEMBERS)
+  const allMembers = rows_(SHEETS.MEMBERS);
+  const members = allMembers
     .filter(member => member.status === "active" || roleByMember[member.member_id] || attendanceMemberIds[member.member_id])
     .map(member => {
       const records = attendance.filter(row => row.member_id === member.member_id);
@@ -347,6 +348,29 @@ function adminAttendanceReport_(payload) {
     : [];
   const selectedByMember = {};
   selectedAttendance.forEach(row => { selectedByMember[row.member_id] = row; });
+  const selectedGuestRows = selectedEvent
+    ? guests.filter(row => row.event_id === selectedEvent.event_id)
+    : [];
+  const selectedEventGuests = selectedGuestRows.map(guest => ({
+    name: guest.name || "未填姓名來賓",
+    type: guest.type || "來賓",
+    host_name: hostDisplayName_(allMembers, guest.host_member_id),
+    created_at: guest.created_at,
+    note: guest.note || ""
+  }));
+  selectedAttendance.forEach(record => {
+    const namedCount = selectedGuestRows.filter(guest => guest.host_member_id === record.member_id).length;
+    const missingCount = Math.max(0, Number(record.guest_count || 0) - namedCount);
+    for (let index = 0; index < missingCount; index++) {
+      selectedEventGuests.push({
+        name: "未填姓名來賓",
+        type: "來賓",
+        host_name: hostDisplayName_(allMembers, record.member_id),
+        created_at: record.checkin_at,
+        note: ""
+      });
+    }
+  });
 
   return {
     terms,
@@ -360,6 +384,7 @@ function adminAttendanceReport_(payload) {
       average_attendance: events.length ? Math.round(attendance.length / events.length * 10) / 10 : 0
     },
     members,
+    selectedEventGuests,
     selectedEventMembers: members.map(member => {
       const record = selectedByMember[member.member_id];
       return {
