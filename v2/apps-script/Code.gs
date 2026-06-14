@@ -14,7 +14,7 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-14-admin-management-1";
+const API_VERSION = "2026-06-14-manual-checkin-1";
 
 function doGet(e) {
   try {
@@ -57,6 +57,7 @@ function routePost_(payload) {
   const adminActions = {
     adminOverview: adminOverview_,
     adminAttendanceReport: adminAttendanceReport_,
+    adminManualCheckIn: adminManualCheckIn_,
     adminCreateMember: adminCreateMember_,
     adminSetMemberStatus: adminSetMemberStatus_,
     adminSetMemberLineBinding: adminSetMemberLineBinding_,
@@ -404,6 +405,55 @@ function adminAttendanceReport_(payload) {
       };
     }).sort((a, b) => Number(b.attended) - Number(a.attended) || a.name.localeCompare(b.name))
   };
+}
+
+function adminManualCheckIn_(payload) {
+  const memberId = cleanText_(payload.memberId, 30, "會員 ID");
+  const guestCount = integer_(payload.guestCount, 0, 20, "攜伴人數");
+  const guestNames = cleanText_(payload.guestNames || "", 200);
+  const note = cleanText_(payload.note || "", 300);
+  const member = findOne_(SHEETS.MEMBERS, "member_id", memberId);
+  if (!member || member.status !== "active") throw new Error("找不到有效會員");
+  const event = getOpenEvent_();
+  if (!event) throw new Error("目前沒有開放簽到的活動");
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const duplicate = findRows_(SHEETS.ATTENDANCE, row =>
+      row.event_id === event.event_id && row.member_id === memberId
+    )[0];
+    if (duplicate) throw new Error(`${memberDisplayName_(member)} 已完成本次活動簽到`);
+
+    const role = getRole_(event.term_id, memberId);
+    const attendanceId = id_("AT");
+    append_(SHEETS.ATTENDANCE, {
+      attendance_id: attendanceId,
+      event_id: event.event_id,
+      member_id: memberId,
+      name_snapshot: memberDisplayName_(member),
+      role_snapshot: role ? role.position : "會員",
+      checkin_at: now_(),
+      source: "ADMIN",
+      guest_count: guestCount,
+      note
+    });
+
+    const names = guestNames.split(/[,，、\n]/).map(name => name.trim()).filter(Boolean);
+    names.slice(0, guestCount).forEach(name => append_(SHEETS.GUESTS, {
+      guest_id: id_("GU"),
+      event_id: event.event_id,
+      host_member_id: memberId,
+      name: cleanText_(name, 50),
+      type: "來賓",
+      note: "管理員手動補登",
+      created_at: now_()
+    }));
+    audit_("manual_check_in", "admin", memberId, event.event_id);
+    return { message: `${memberDisplayName_(member)} 已由管理員完成手動簽到。` };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function adminCreateMember_(payload) {

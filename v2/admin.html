@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css?v=20260614-4">
   <script src="config.js?v=20260614-4"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="admin.js?v=20260614-5" defer></script>
+  <script src="admin.js?v=20260614-6" defer></script>
 </head>
 <body class="admin-page">
   <header class="admin-header">
@@ -63,6 +63,19 @@
             <label>年度<select id="quickEventTerm"></select></label>
           </div>
           <button id="quickCreateEventButton" type="button">建立並開放簽到</button>
+        </section>
+
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><h2>管理員手動簽到</h2><p>會員無法使用 LINE 時，可由管理員直接補登目前活動。</p></div>
+          </div>
+          <div class="inline-form">
+            <label>選擇會員<select id="manualCheckinMember"></select></label>
+            <label>攜伴人數<input id="manualGuestCount" type="number" min="0" max="20" value="0"></label>
+            <label>來賓姓名<input id="manualGuestNames" maxlength="200" placeholder="多人請用逗號分隔"></label>
+            <label>備註<input id="manualCheckinNote" maxlength="300" placeholder="例如：LINE 登入異常"></label>
+            <button id="manualCheckinButton" type="button">確認手動簽到</button>
+          </div>
         </section>
 
         <section class="panel stack">

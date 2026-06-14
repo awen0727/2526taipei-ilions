@@ -111,6 +111,7 @@
     document.getElementById("importTerm").value = currentTermId();
     selectTermForDate("quickEventDate", "quickEventTerm");
     selectTermForDate("eventDate", "eventTerm");
+    fillManualCheckinMembers();
     renderBindings();
     renderMembers();
     renderBindingHistory();
@@ -145,6 +146,22 @@
       ? todayAttendanceReport.selectedEventMembers.filter(member => !member.attended && member.member_status === "active")
       : [];
     renderTodayPeople("todayAbsentCards", "noTodayAbsent", absent, person => person.position || "會員");
+  }
+
+  function fillManualCheckinMembers() {
+    const select = document.getElementById("manualCheckinMember");
+    const previous = select.value;
+    select.replaceChildren(new Option("請選擇會員", ""));
+    const attendedIds = new Set(
+      todayAttendanceReport
+        ? todayAttendanceReport.selectedEventMembers.filter(member => member.attended).map(member => member.member_id)
+        : []
+    );
+    state.members
+      .filter(member => member.status === "active" && !attendedIds.has(member.member_id))
+      .sort((a, b) => String(a.display_name || a.name).localeCompare(String(b.display_name || b.name)))
+      .forEach(member => select.appendChild(new Option(member.display_name || member.name, member.member_id)));
+    if ([...select.options].some(option => option.value === previous)) select.value = previous;
   }
 
   function renderTodayPeople(containerId, emptyId, people, detail) {
@@ -185,6 +202,7 @@
       termId: openEvent.term_id,
       eventId: openEvent.event_id
     });
+    fillManualCheckinMembers();
     renderToday(currentDashboard || { list: [] });
   }
 
@@ -597,6 +615,19 @@
     const openEvent = state.events.find(event => event.status === "open");
     if (openEvent) openEventReport(openEvent);
     else activateTab("reports");
+  });
+  document.getElementById("manualCheckinButton").addEventListener("click", () => {
+    const memberId = document.getElementById("manualCheckinMember").value;
+    if (!memberId) return setMessage(message, "請先選擇要手動簽到的會員", true);
+    const memberName = document.getElementById("manualCheckinMember").selectedOptions[0].textContent;
+    confirmAction(`確定由管理員替「${memberName}」完成目前活動簽到嗎？`, () =>
+      runAction("adminManualCheckIn", {
+        memberId,
+        guestCount: Number(document.getElementById("manualGuestCount").value || 0),
+        guestNames: document.getElementById("manualGuestNames").value.trim(),
+        note: document.getElementById("manualCheckinNote").value.trim()
+      })
+    );
   });
   document.getElementById("saveAllRolesButton").addEventListener("click", () => confirmAction(
     "確定儲存目前年度的全部職位設定嗎？",
