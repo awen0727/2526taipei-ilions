@@ -86,7 +86,7 @@ th { background: #faf6e8; }
   top: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 5px;
   margin-bottom: 18px;
   padding: 7px;

@@ -1,10 +1,11 @@
 (function () {
   "use strict";
 
-  const { config, post, get, setMessage } = window.ILionsV2;
+  const { config, post, get, setMessage, formatDateTime } = window.ILionsV2;
   const message = document.getElementById("message");
   const tokenInput = document.getElementById("adminToken");
   let state = { members: [], events: [], bindings: [], bindingHistory: [], terms: [], roles: [] };
+  let attendanceReport = null;
 
   tokenInput.value = sessionStorage.getItem("ilionsV2AdminToken") || "";
   document.getElementById("quickEventDate").valueAsDate = new Date();
@@ -232,6 +233,105 @@
     });
   }
 
+  function addReportCell(row, text, className) {
+    const cell = document.createElement("td");
+    cell.textContent = text == null ? "" : String(text);
+    if (className) cell.className = className;
+    row.appendChild(cell);
+  }
+
+  function fillReportFilters() {
+    const termFilter = document.getElementById("reportTermFilter");
+    const eventFilter = document.getElementById("reportEventFilter");
+    termFilter.replaceChildren();
+    attendanceReport.terms.forEach(term => termFilter.appendChild(
+      new Option(term.name, term.term_id, false, term.term_id === attendanceReport.selectedTermId)
+    ));
+    eventFilter.replaceChildren();
+    if (!attendanceReport.events.length) eventFilter.appendChild(new Option("本年度尚無活動", ""));
+    attendanceReport.events.forEach(event => eventFilter.appendChild(new Option(
+      `${displayDate(event.event_date)}｜${event.name}`,
+      event.event_id,
+      false,
+      attendanceReport.selectedEvent && event.event_id === attendanceReport.selectedEvent.event_id
+    )));
+  }
+
+  function renderAttendanceReport() {
+    const report = attendanceReport;
+    document.getElementById("reportEventCount").textContent = report.summary.event_count;
+    document.getElementById("reportMemberCount").textContent = report.summary.member_count;
+    document.getElementById("reportAttendanceCount").textContent = report.summary.attendance_count;
+    document.getElementById("reportAverageAttendance").textContent = report.summary.average_attendance;
+
+    const event = report.selectedEvent;
+    document.getElementById("reportSelectedEventName").textContent = event ? event.name : "本年度尚無活動";
+    document.getElementById("reportSelectedEventMeta").textContent = event ? displayDate(event.event_date) : "";
+    document.getElementById("reportSelectedEventBadge").textContent = event ? `出席 ${event.member_count}｜來賓 ${event.guest_count}` : "";
+    renderReportMembers();
+
+    const guestRows = document.getElementById("reportGuestRows");
+    const guests = report.selectedEventGuests || [];
+    guestRows.replaceChildren();
+    document.getElementById("reportGuestBadge").textContent = `${guests.length} 位`;
+    document.getElementById("reportNoGuests").classList.toggle("hidden", guests.length > 0);
+    guests.forEach(guest => {
+      const row = document.createElement("tr");
+      addReportCell(row, guest.name);
+      addReportCell(row, guest.type);
+      addReportCell(row, guest.host_name || "");
+      addReportCell(row, guest.created_at ? formatDateTime(guest.created_at) : "");
+      addReportCell(row, guest.note || "");
+      guestRows.appendChild(row);
+    });
+
+    const summaryRows = document.getElementById("reportSummaryRows");
+    summaryRows.replaceChildren();
+    report.members.forEach(member => {
+      const row = document.createElement("tr");
+      addReportCell(row, member.name);
+      addReportCell(row, member.position);
+      addReportCell(row, member.attended_count);
+      addReportCell(row, member.absent_count);
+      addReportCell(row, `${member.attendance_rate}%`, member.attendance_rate < 50 ? "rate-low" : "rate-good");
+      summaryRows.appendChild(row);
+    });
+  }
+
+  function renderReportMembers() {
+    if (!attendanceReport) return;
+    const query = document.getElementById("reportMemberSearch").value.trim().toLowerCase();
+    const status = document.getElementById("reportStatusFilter").value;
+    const rows = document.getElementById("reportEventRows");
+    rows.replaceChildren();
+    attendanceReport.selectedEventMembers.filter(member => {
+      if (query && !member.name.toLowerCase().includes(query)) return false;
+      if (status === "attended" && !member.attended) return false;
+      if (status === "absent" && member.attended) return false;
+      return true;
+    }).forEach(member => {
+      const row = document.createElement("tr");
+      addReportCell(row, member.attended ? "已出席" : "未出席", member.attended ? "attendance-yes" : "attendance-no");
+      addReportCell(row, member.name);
+      addReportCell(row, member.role_snapshot || member.position);
+      addReportCell(row, member.checkin_at ? formatDateTime(member.checkin_at) : "");
+      addReportCell(row, member.guest_count || 0);
+      addReportCell(row, member.note || "");
+      rows.appendChild(row);
+    });
+  }
+
+  async function loadAttendanceReport(options) {
+    attendanceReport = await post({
+      action: "adminAttendanceReport",
+      adminToken: adminToken(),
+      termId: options && options.termId,
+      eventId: options && options.eventId
+    });
+    fillReportFilters();
+    renderAttendanceReport();
+  }
+
   async function runAction(action, data) {
     const controls = [...document.querySelectorAll("button")].filter(control => !control.disabled);
     try {
@@ -258,9 +358,23 @@
   document.querySelectorAll(".tab-button").forEach(tab => tab.addEventListener("click", () => {
     document.querySelectorAll(".tab-button").forEach(item => item.classList.toggle("active", item === tab));
     document.querySelectorAll(".tab-page").forEach(page => page.classList.toggle("active", page.dataset.page === tab.dataset.tab));
+    if (tab.dataset.tab === "reports" && !attendanceReport) {
+      loadAttendanceReport().catch(error => setMessage(message, error.message, true));
+    }
   }));
   document.getElementById("memberSearch").addEventListener("input", renderMembers);
   document.getElementById("roleTerm").addEventListener("change", renderRoles);
+  document.getElementById("reportTermFilter").addEventListener("change", event =>
+    loadAttendanceReport({ termId: event.target.value }).catch(error => setMessage(message, error.message, true))
+  );
+  document.getElementById("reportEventFilter").addEventListener("change", event =>
+    loadAttendanceReport({
+      termId: document.getElementById("reportTermFilter").value,
+      eventId: event.target.value
+    }).catch(error => setMessage(message, error.message, true))
+  );
+  document.getElementById("reportStatusFilter").addEventListener("change", renderReportMembers);
+  document.getElementById("reportMemberSearch").addEventListener("input", renderReportMembers);
   document.getElementById("saveAllRolesButton").addEventListener("click", () => confirmAction(
     "確定儲存目前年度的全部職位設定嗎？",
     () => {

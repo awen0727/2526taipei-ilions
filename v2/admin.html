@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="config.js?v=20260614-3"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="admin.js?v=20260614-2" defer></script>
+  <script src="admin.js?v=20260614-4" defer></script>
 </head>
 <body class="admin-page">
   <header class="admin-header">
@@ -15,10 +15,7 @@
       <h1>群愛獅子會管理台</h1>
       <p>會員、活動與年度職位管理</p>
     </div>
-    <div class="header-actions">
-      <a class="header-link" href="attendance.html">出席查詢</a>
-      <button id="refreshButton" class="header-button hidden" type="button">重新整理</button>
-    </div>
+    <button id="refreshButton" class="header-button hidden" type="button">重新整理</button>
   </header>
 
   <main>
@@ -38,6 +35,7 @@
         <button class="tab-button" data-tab="members" type="button">會員管理</button>
         <button class="tab-button" data-tab="events" type="button">活動紀錄</button>
         <button class="tab-button" data-tab="roles" type="button">年度職位</button>
+        <button class="tab-button" data-tab="reports" type="button">出席查詢</button>
       </nav>
 
       <div id="message" class="message floating-message"></div>
@@ -162,6 +160,65 @@
           <div class="sticky-save-bar">
             <span class="muted">修改完成後一次儲存全部職位。</span>
             <button id="saveAllRolesButton" type="button">儲存全部職位</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-page" data-page="reports">
+        <section class="panel report-filters">
+          <label>年度<select id="reportTermFilter"></select></label>
+          <label>活動<select id="reportEventFilter"></select></label>
+          <label>出席狀態
+            <select id="reportStatusFilter">
+              <option value="all">全部</option>
+              <option value="attended">已出席</option>
+              <option value="absent">未出席</option>
+            </select>
+          </label>
+          <label>搜尋會員<input id="reportMemberSearch" type="search" placeholder="輸入姓名"></label>
+        </section>
+
+        <section class="summary-grid report-summary">
+          <article class="summary-card"><span>年度活動</span><strong id="reportEventCount">0</strong></article>
+          <article class="summary-card"><span>統計會員</span><strong id="reportMemberCount">0</strong></article>
+          <article class="summary-card"><span>總出席人次</span><strong id="reportAttendanceCount">0</strong></article>
+          <article class="summary-card"><span>平均每場出席</span><strong id="reportAverageAttendance">0</strong></article>
+        </section>
+
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><h2 id="reportSelectedEventName">單場出席狀態</h2><p id="reportSelectedEventMeta"></p></div>
+            <span id="reportSelectedEventBadge" class="badge"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>狀態</th><th>會員</th><th>職位</th><th>簽到時間</th><th>攜伴</th><th>備註</th></tr></thead>
+              <tbody id="reportEventRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><h2>當次來賓名單</h2><p>包含未填姓名的攜伴人數。</p></div>
+            <span id="reportGuestBadge" class="badge"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>來賓姓名</th><th>類型</th><th>介紹會員</th><th>登記時間</th><th>備註</th></tr></thead>
+              <tbody id="reportGuestRows"></tbody>
+            </table>
+          </div>
+          <p id="reportNoGuests" class="empty-state hidden">本次活動沒有來賓。</p>
+        </section>
+
+        <section class="panel stack">
+          <div class="section-heading"><div><h2>年度出席統計</h2><p>依出席場次排序。</p></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>會員</th><th>年度職位</th><th>出席</th><th>未出席</th><th>出席率</th></tr></thead>
+              <tbody id="reportSummaryRows"></tbody>
+            </table>
           </div>
         </section>
       </section>
