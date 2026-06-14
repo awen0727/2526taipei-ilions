@@ -17,6 +17,7 @@
 - `index.html`：新版 LINE 簽到頁
 - `dashboard.html`：新版現場看板
 - `admin.html`：新版管理台
+- `attendance.html`：管理員單場出席狀態與年度出席率查詢
 - `apps-script/`：新版 Google Apps Script 後端原始碼
 
 ## 建立獨立環境

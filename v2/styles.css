@@ -77,7 +77,9 @@ th { background: #faf6e8; }
 .stat { min-width: 120px; padding: 12px; border-radius: 8px; background: white; text-align: center; }
 .stat strong { display: block; font-size: 2rem; color: var(--gold); }
 .admin-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .header-button { width: auto; color: #3d2b02; background: rgba(255,255,255,.65); }
+.header-link { padding: 10px 14px; border-radius: 8px; color: #3d2b02; background: rgba(255,255,255,.65); font-weight: 800; text-decoration: none; }
 .login-card { width: min(460px, 100%); margin: 50px auto; }
 .admin-tabs {
   position: sticky;
@@ -129,11 +131,16 @@ th { background: #faf6e8; }
 .sticky-save-bar { position: sticky; bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #dfce94; border-radius: 10px; background: #fff9e6; box-shadow: 0 3px 14px rgba(0,0,0,.12); }
 .sticky-save-bar button { width: auto; }
 .empty-state { padding: 24px; text-align: center; color: var(--muted); }
+.report-filters { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; }
+.report-summary { grid-template-columns: repeat(4, 1fr); }
+.attendance-yes, .rate-good { color: var(--success); font-weight: 800; }
+.attendance-no, .rate-low { color: var(--danger); font-weight: 800; }
 @media (max-width: 640px) {
   main { width: min(100% - 18px, 1100px); margin: 12px auto; }
   .panel { padding: 15px; }
   th, td { padding: 7px; }
   .admin-header { align-items: flex-start; }
+  .header-actions { align-items: stretch; flex-direction: column; }
   .admin-tabs { grid-template-columns: repeat(2, 1fr); }
   .summary-grid { grid-template-columns: 1fr 1fr; }
   .summary-card.featured { grid-column: span 2; }
@@ -142,4 +149,5 @@ th { background: #faf6e8; }
   .role-card { grid-template-columns: 1fr; }
   .sticky-save-bar { align-items: stretch; flex-direction: column; }
   .sticky-save-bar button { width: 100%; }
+  .report-filters, .report-summary { grid-template-columns: 1fr 1fr; }
 }

@@ -14,7 +14,7 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-13-line-auth-diagnostics-1";
+const API_VERSION = "2026-06-14-attendance-report-1";
 
 function doGet(e) {
   try {
@@ -56,6 +56,7 @@ function routePost_(payload) {
   };
   const adminActions = {
     adminOverview: adminOverview_,
+    adminAttendanceReport: adminAttendanceReport_,
     adminCreateMember: adminCreateMember_,
     adminSetMemberStatus: adminSetMemberStatus_,
     adminApproveBinding: adminApproveBinding_,
@@ -287,6 +288,89 @@ function adminOverview_() {
     bindingHistory: allBindings.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
     terms: rows_(SHEETS.TERMS),
     roles: rows_(SHEETS.ROLES)
+  };
+}
+
+function adminAttendanceReport_(payload) {
+  ensureMemberColumns_();
+  const terms = rows_(SHEETS.TERMS);
+  const requestedTermId = String(payload.termId || "");
+  const currentTerm = terms.find(term => term.status === "current") || terms[0];
+  const termId = terms.some(term => term.term_id === requestedTermId)
+    ? requestedTermId
+    : (currentTerm ? currentTerm.term_id : "");
+  const events = rows_(SHEETS.EVENTS)
+    .filter(event => event.term_id === termId)
+    .sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
+  const eventIds = {};
+  events.forEach(event => { eventIds[event.event_id] = true; });
+
+  const attendance = rows_(SHEETS.ATTENDANCE).filter(row => eventIds[row.event_id]);
+  const guests = rows_(SHEETS.GUESTS).filter(row => eventIds[row.event_id]);
+  const roles = rows_(SHEETS.ROLES).filter(role => role.term_id === termId);
+  const roleByMember = {};
+  roles.forEach(role => { roleByMember[role.member_id] = role; });
+  const attendanceMemberIds = {};
+  attendance.forEach(row => { attendanceMemberIds[row.member_id] = true; });
+
+  const members = rows_(SHEETS.MEMBERS)
+    .filter(member => member.status === "active" || roleByMember[member.member_id] || attendanceMemberIds[member.member_id])
+    .map(member => {
+      const records = attendance.filter(row => row.member_id === member.member_id);
+      const attendedCount = records.length;
+      return {
+        member_id: member.member_id,
+        name: memberDisplayName_(member),
+        member_status: member.status,
+        position: roleByMember[member.member_id] ? roleByMember[member.member_id].position : "會員",
+        attended_count: attendedCount,
+        absent_count: Math.max(0, events.length - attendedCount),
+        attendance_rate: events.length ? Math.round(attendedCount / events.length * 1000) / 10 : 0
+      };
+    })
+    .sort((a, b) => b.attended_count - a.attended_count || a.name.localeCompare(b.name));
+
+  const eventSummaries = events.map(event => ({
+    ...event,
+    member_count: attendance.filter(row => row.event_id === event.event_id).length,
+    guest_count: Math.max(
+      guests.filter(row => row.event_id === event.event_id).length,
+      attendance
+        .filter(row => row.event_id === event.event_id)
+        .reduce((sum, row) => sum + Number(row.guest_count || 0), 0)
+    )
+  }));
+  const requestedEventId = String(payload.eventId || "");
+  const selectedEvent = eventSummaries.find(event => event.event_id === requestedEventId) || eventSummaries[eventSummaries.length - 1] || null;
+  const selectedAttendance = selectedEvent
+    ? attendance.filter(row => row.event_id === selectedEvent.event_id)
+    : [];
+  const selectedByMember = {};
+  selectedAttendance.forEach(row => { selectedByMember[row.member_id] = row; });
+
+  return {
+    terms,
+    selectedTermId: termId,
+    events: eventSummaries,
+    selectedEvent,
+    summary: {
+      event_count: events.length,
+      member_count: members.length,
+      attendance_count: attendance.length,
+      average_attendance: events.length ? Math.round(attendance.length / events.length * 10) / 10 : 0
+    },
+    members,
+    selectedEventMembers: members.map(member => {
+      const record = selectedByMember[member.member_id];
+      return {
+        ...member,
+        attended: Boolean(record),
+        checkin_at: record ? record.checkin_at : "",
+        role_snapshot: record ? record.role_snapshot : member.position,
+        guest_count: record ? Number(record.guest_count || 0) : 0,
+        note: record ? record.note : ""
+      };
+    }).sort((a, b) => Number(b.attended) - Number(a.attended) || a.name.localeCompare(b.name))
   };
 }
 

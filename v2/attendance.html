@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>群愛獅子會出席查詢</title>
+  <link rel="stylesheet" href="styles.css?v=20260614-1">
+  <script src="config.js?v=20260614-1"></script>
+  <script src="common.js?v=20260614-1" defer></script>
+  <script src="attendance.js?v=20260614-1" defer></script>
+</head>
+<body>
+  <header class="admin-header">
+    <div>
+      <h1>群愛獅子會出席查詢</h1>
+      <p>查詢單場出席狀態與年度出席率</p>
+    </div>
+    <a class="header-link" href="admin.html">返回管理台</a>
+  </header>
+  <main>
+    <section id="loginPanel" class="panel login-card stack">
+      <h2>管理員登入</h2>
+      <label>管理密鑰
+        <input id="adminToken" type="password" autocomplete="current-password">
+      </label>
+      <button id="loginButton" type="button">查詢出席紀錄</button>
+      <div id="loginMessage" class="message"></div>
+    </section>
+
+    <div id="reportApp" class="hidden">
+      <section class="panel report-filters">
+        <label>年度<select id="termFilter"></select></label>
+        <label>活動<select id="eventFilter"></select></label>
+        <label>出席狀態
+          <select id="statusFilter">
+            <option value="all">全部</option>
+            <option value="attended">已出席</option>
+            <option value="absent">未出席</option>
+          </select>
+        </label>
+        <label>搜尋會員<input id="memberSearch" type="search" placeholder="輸入姓名"></label>
+      </section>
+
+      <div id="message" class="message"></div>
+      <section class="summary-grid report-summary">
+        <article class="summary-card"><span>年度活動</span><strong id="eventCount">0</strong></article>
+        <article class="summary-card"><span>統計會員</span><strong id="memberCount">0</strong></article>
+        <article class="summary-card"><span>總出席人次</span><strong id="attendanceCount">0</strong></article>
+        <article class="summary-card"><span>平均每場出席</span><strong id="averageAttendance">0</strong></article>
+      </section>
+
+      <section class="panel stack">
+        <div class="section-heading">
+          <div>
+            <h2 id="selectedEventName">單場出席狀態</h2>
+            <p id="selectedEventMeta"></p>
+          </div>
+          <span id="selectedEventBadge" class="badge"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>狀態</th><th>會員</th><th>職位</th><th>簽到時間</th><th>攜伴</th><th>備註</th></tr></thead>
+            <tbody id="eventRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel stack">
+        <div class="section-heading">
+          <div><h2>年度出席統計</h2><p>依出席場次排序。</p></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>會員</th><th>年度職位</th><th>出席</th><th>未出席</th><th>出席率</th></tr></thead>
+            <tbody id="summaryRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
