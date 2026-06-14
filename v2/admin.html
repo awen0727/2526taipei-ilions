@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>群愛獅子會簽到管理台</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260614-4">
   <script src="config.js?v=20260614-3"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="admin.js?v=20260614-4" defer></script>
+  <script src="admin.js?v=20260614-5" defer></script>
 </head>
 <body class="admin-page">
   <header class="admin-header">
@@ -63,6 +63,30 @@
             <label>年度<select id="quickEventTerm"></select></label>
           </div>
           <button id="quickCreateEventButton" type="button">建立並開放簽到</button>
+        </section>
+
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><h2>目前簽到狀況</h2><p>每 10 秒自動更新已簽到會員與來賓。</p></div>
+            <button id="todayReportButton" class="secondary" type="button">查看完整出席紀錄</button>
+          </div>
+          <div class="today-lists">
+            <div>
+              <h3>已簽到會員</h3>
+              <div id="todayMemberCards" class="card-list"></div>
+              <p id="noTodayMembers" class="empty-state">目前尚無會員簽到。</p>
+            </div>
+            <div>
+              <h3>當次來賓</h3>
+              <div id="todayGuestCards" class="card-list"></div>
+              <p id="noTodayGuests" class="empty-state">目前尚無來賓。</p>
+            </div>
+            <div>
+              <h3>尚未出席會員</h3>
+              <div id="todayAbsentCards" class="card-list"></div>
+              <p id="noTodayAbsent" class="empty-state">目前沒有未出席會員。</p>
+            </div>
+          </div>
         </section>
 
         <section class="panel">
@@ -137,6 +161,7 @@
             <label>年度<select id="eventTerm"></select></label>
             <button id="createEventButton" type="button">建立並開放</button>
           </div>
+          <p class="muted">活動日期會自動對應年度；已有出席紀錄的活動只能封存，不能永久刪除。</p>
           <div id="eventCards" class="card-list"></div>
         </section>
       </section>

@@ -14,7 +14,7 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-14-guest-report-1";
+const API_VERSION = "2026-06-14-admin-management-1";
 
 function doGet(e) {
   try {
@@ -59,8 +59,11 @@ function routePost_(payload) {
     adminAttendanceReport: adminAttendanceReport_,
     adminCreateMember: adminCreateMember_,
     adminSetMemberStatus: adminSetMemberStatus_,
+    adminSetMemberLineBinding: adminSetMemberLineBinding_,
     adminApproveBinding: adminApproveBinding_,
     adminCreateEvent: adminCreateEvent_,
+    adminUpdateEvent: adminUpdateEvent_,
+    adminDeleteEvent: adminDeleteEvent_,
     adminSetEventStatus: adminSetEventStatus_,
     adminCreateTerm: adminCreateTerm_,
     adminSaveRole: adminSaveRole_,
@@ -205,6 +208,7 @@ function getDashboard_() {
       type: "member",
       name: member ? memberDisplayName_(member) : row.name_snapshot,
       position: row.role_snapshot,
+      sort_order: getRole_(event.term_id, row.member_id)?.sort_order || 999,
       guest_count: Number(row.guest_count || 0),
       checkin_at: row.checkin_at
     };
@@ -223,6 +227,7 @@ function getDashboard_() {
         type: "member",
         name: memberDisplayName_(member),
         position: role ? role.position : "會員",
+        sort_order: role ? role.sort_order : 999,
         guest_count: 0,
         checkin_at: guest.created_at,
         registration_note: "由會員攜伴名單辨識"
@@ -252,7 +257,9 @@ function getDashboard_() {
     event,
     memberCount: memberCards.length,
     guestCount: guestCards.length,
-    list: memberCards.concat(guestCards)
+    list: memberCards
+      .sort((a, b) => Number(a.sort_order || 999) - Number(b.sort_order || 999) || a.name.localeCompare(b.name))
+      .concat(guestCards)
   };
 }
 
@@ -434,6 +441,29 @@ function adminSetMemberStatus_(payload) {
   return {};
 }
 
+function adminSetMemberLineBinding_(payload) {
+  ensureMemberColumns_();
+  const memberId = cleanText_(payload.memberId, 30, "會員 ID");
+  const member = findOne_(SHEETS.MEMBERS, "member_id", memberId);
+  if (!member) throw new Error("找不到指定會員");
+  const lineUserId = cleanText_(payload.lineUserId || "", 80);
+  const lineDisplayName = cleanText_(payload.lineDisplayName || "", 80);
+  if (lineUserId && !/^U[a-fA-F0-9]{32}$/.test(lineUserId)) {
+    throw new Error("LINE User ID 格式不正確，應為 U 開頭加 32 位英數字");
+  }
+  const used = lineUserId ? findOne_(SHEETS.MEMBERS, "line_user_id", lineUserId) : null;
+  if (used && used.member_id !== memberId) {
+    throw new Error(`此 LINE User ID 已綁定會員：${memberDisplayName_(used)}`);
+  }
+  updateById_(SHEETS.MEMBERS, "member_id", memberId, {
+    line_user_id: lineUserId,
+    line_display_name: lineUserId ? lineDisplayName : "",
+    updated_at: now_()
+  });
+  audit_(lineUserId ? "set_line_binding" : "remove_line_binding", "admin", memberId, lineDisplayName);
+  return { message: lineUserId ? "LINE 綁定已更新。" : "LINE 綁定已解除。" };
+}
+
 function adminApproveBinding_(payload) {
   ensureMemberColumns_();
   const request = findOne_(SHEETS.BINDINGS, "request_id", payload.requestId);
@@ -496,7 +526,7 @@ function autoApproveBindingByLineName_(requestId) {
 function adminCreateEvent_(payload) {
   const name = cleanText_(payload.name, 80, "活動名稱");
   const eventDate = cleanDate_(payload.eventDate, true);
-  const termId = cleanText_(payload.termId, 30, "年度 ID");
+  const termId = termIdForDate_(eventDate) || cleanText_(payload.termId, 30, "年度 ID");
   if (!findOne_(SHEETS.TERMS, "term_id", termId)) throw new Error("找不到指定年度");
 
   const recentDuplicate = findRows_(SHEETS.EVENTS, row =>
@@ -530,6 +560,33 @@ function adminSetEventStatus_(payload) {
   updateById_(SHEETS.EVENTS, "event_id", payload.eventId, { status });
   audit_("set_event_status", "admin", payload.eventId, status);
   return {};
+}
+
+function adminUpdateEvent_(payload) {
+  const eventId = cleanText_(payload.eventId, 80, "活動 ID");
+  const event = findOne_(SHEETS.EVENTS, "event_id", eventId);
+  if (!event) throw new Error("找不到指定活動");
+  const eventDate = cleanDate_(payload.eventDate, true);
+  const termId = termIdForDate_(eventDate) || cleanText_(payload.termId, 30, "年度 ID");
+  if (!findOne_(SHEETS.TERMS, "term_id", termId)) throw new Error("找不到指定年度");
+  const name = cleanText_(payload.name, 80, "活動名稱");
+  updateById_(SHEETS.EVENTS, "event_id", eventId, { name, event_date: eventDate, term_id: termId });
+  audit_("update_event", "admin", eventId, JSON.stringify({ name, eventDate, termId }));
+  return { message: "活動資料已更新。" };
+}
+
+function adminDeleteEvent_(payload) {
+  const eventId = cleanText_(payload.eventId, 80, "活動 ID");
+  const event = findOne_(SHEETS.EVENTS, "event_id", eventId);
+  if (!event) throw new Error("找不到指定活動");
+  const attendanceCount = findRows_(SHEETS.ATTENDANCE, row => row.event_id === eventId).length;
+  const guestCount = findRows_(SHEETS.GUESTS, row => row.event_id === eventId).length;
+  if (attendanceCount || guestCount) {
+    throw new Error(`活動已有 ${attendanceCount} 筆出席、${guestCount} 筆來賓紀錄，不能永久刪除；請改用封存。`);
+  }
+  deleteById_(SHEETS.EVENTS, "event_id", eventId);
+  audit_("delete_event", "admin", eventId, event.name);
+  return { message: "沒有簽到紀錄的活動已永久刪除。" };
 }
 
 function adminCreateTerm_(payload) {
@@ -929,6 +986,16 @@ function updateByComposite_(sheetName, keys, changes) {
   });
 }
 
+function deleteById_(sheetName, idKey, idValue) {
+  const sheet = spreadsheet_().getSheetByName(sheetName);
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0].map(String);
+  const idIndex = headers.indexOf(idKey);
+  const rowIndex = values.findIndex((row, index) => index > 0 && String(row[idIndex]) === String(idValue));
+  if (rowIndex < 1) throw new Error(`找不到資料：${idValue}`);
+  sheet.deleteRow(rowIndex + 1);
+}
+
 function nextMemberId_() {
   const max = rows_(SHEETS.MEMBERS).reduce((value, row) => {
     const number = Number(String(row.member_id).replace(/\D/g, "")) || 0;
@@ -1010,6 +1077,24 @@ function now_() {
 
 function dateOnly_(date) {
   return Utilities.formatDate(date, Session.getScriptTimeZone(), "yyyy-MM-dd");
+}
+
+function termIdForDate_(dateValue) {
+  const date = cleanDate_(dateValue, true);
+  const term = rows_(SHEETS.TERMS).find(item => {
+    const start = storedDateOnly_(item.start_date);
+    const end = storedDateOnly_(item.end_date);
+    return start && end && date >= start && date <= end;
+  });
+  return term ? term.term_id : "";
+}
+
+function storedDateOnly_(value) {
+  if (!value) return "";
+  const text = String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? text.slice(0, 10) : dateOnly_(date);
 }
 
 function serialize_(value) {

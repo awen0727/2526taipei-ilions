@@ -6,6 +6,8 @@
   const tokenInput = document.getElementById("adminToken");
   let state = { members: [], events: [], bindings: [], bindingHistory: [], terms: [], roles: [] };
   let attendanceReport = null;
+  let todayAttendanceReport = null;
+  let currentDashboard = null;
 
   tokenInput.value = sessionStorage.getItem("ilionsV2AdminToken") || "";
   document.getElementById("quickEventDate").valueAsDate = new Date();
@@ -31,6 +33,12 @@
     control.type = "button";
     control.addEventListener("click", handler);
     return control;
+  }
+
+  function labeledControl(labelText, control) {
+    const label = el("label", "", labelText);
+    label.appendChild(control);
+    return label;
   }
 
   function selectMembers(selectedId) {
@@ -81,7 +89,9 @@
       get({ action: "dashboard", token: config.dashboardToken })
     ]);
     state = overview;
+    currentDashboard = dashboard;
     render(dashboard);
+    loadTodayAttendanceReport().catch(error => setMessage(message, error.message, true));
     document.getElementById("loginPanel").classList.add("hidden");
     document.getElementById("adminApp").classList.remove("hidden");
     document.getElementById("refreshButton").classList.remove("hidden");
@@ -99,6 +109,8 @@
     document.getElementById("quickEventTerm").value = currentTermId();
     document.getElementById("eventTerm").value = currentTermId();
     document.getElementById("importTerm").value = currentTermId();
+    selectTermForDate("quickEventDate", "quickEventTerm");
+    selectTermForDate("eventDate", "eventTerm");
     renderBindings();
     renderMembers();
     renderBindingHistory();
@@ -121,6 +133,59 @@
         runAction("adminSetEventStatus", { eventId: openEvent.event_id, status: "closed" })
       );
     }
+    const members = (dashboard.list || []).filter(person => person.type === "member");
+    const guests = (dashboard.list || []).filter(person => person.type === "guest");
+    renderTodayPeople("todayMemberCards", "noTodayMembers", members, person =>
+      `${person.position || "會員"} · ${person.checkin_at ? formatDateTime(person.checkin_at) : "已登記"}`
+    );
+    renderTodayPeople("todayGuestCards", "noTodayGuests", guests, person =>
+      person.host_name ? `介紹會員：${person.host_name}` : "未記錄介紹會員"
+    );
+    const absent = todayAttendanceReport
+      ? todayAttendanceReport.selectedEventMembers.filter(member => !member.attended && member.member_status === "active")
+      : [];
+    renderTodayPeople("todayAbsentCards", "noTodayAbsent", absent, person => person.position || "會員");
+  }
+
+  function renderTodayPeople(containerId, emptyId, people, detail) {
+    const container = document.getElementById(containerId);
+    container.replaceChildren();
+    document.getElementById(emptyId).classList.toggle("hidden", people.length > 0);
+    people.forEach(person => {
+      const card = el("article", "manage-card");
+      const info = el("div", "manage-card-info");
+      info.append(el("strong", "", person.name), el("span", "muted", detail(person)));
+      card.appendChild(info);
+      container.appendChild(card);
+    });
+  }
+
+  async function refreshToday() {
+    if (document.getElementById("adminApp").classList.contains("hidden")) return;
+    try {
+      await Promise.all([
+        get({ action: "dashboard", token: config.dashboardToken }).then(result => { currentDashboard = result; }),
+        loadTodayAttendanceReport()
+      ]);
+      renderToday(currentDashboard);
+    } catch (error) {
+      setMessage(message, error.message, true);
+    }
+  }
+
+  async function loadTodayAttendanceReport() {
+    const openEvent = state.events.find(event => event.status === "open");
+    if (!openEvent) {
+      todayAttendanceReport = null;
+      return;
+    }
+    todayAttendanceReport = await post({
+      action: "adminAttendanceReport",
+      adminToken: adminToken(),
+      termId: openEvent.term_id,
+      eventId: openEvent.event_id
+    });
+    renderToday(currentDashboard || { list: [] });
   }
 
   function renderBindings() {
@@ -162,13 +227,49 @@
       info.append(el("span", "muted", `${statusText(member.status)} · ${lineText}`));
       if (member.line_user_id) info.append(el("span", "technical-id", `LINE ID：${member.line_user_id}`));
       const next = member.status === "active" ? "inactive" : "active";
-      const action = button(next === "active" ? "重新啟用" : "停用會員", () =>
+      const controls = el("div", "manage-card-actions");
+      controls.appendChild(button(member.line_user_id ? "修改 LINE 綁定" : "設定 LINE 綁定", () =>
+        toggleMemberLineForm(member, card), "secondary"));
+      if (member.line_user_id) controls.appendChild(button("解除 LINE", () =>
+        confirmAction(`確定解除「${member.display_name || member.name}」的 LINE 綁定嗎？`, () =>
+          runAction("adminSetMemberLineBinding", { memberId: member.member_id, lineUserId: "", lineDisplayName: "" })
+        ), "danger"));
+      controls.appendChild(button(next === "active" ? "重新啟用" : "停用會員", () =>
         confirmAction(`確定要${next === "active" ? "重新啟用" : "停用"}「${member.display_name || member.name}」嗎？`, () =>
           runAction("adminSetMemberStatus", { memberId: member.member_id, status: next })
-        ), next === "active" ? "" : "danger");
-      card.append(info, action);
+        ), next === "active" ? "" : "danger"));
+      card.append(info, controls);
       container.appendChild(card);
     });
+  }
+
+  function toggleMemberLineForm(member, card) {
+    const existing = card.querySelector(".member-line-form");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    const form = el("div", "inline-form card-inline-form member-line-form");
+    const lineUserId = el("input");
+    lineUserId.value = member.line_user_id || "";
+    lineUserId.placeholder = "U 開頭加 32 位英數字";
+    const lineName = el("input");
+    lineName.value = member.line_display_name || "";
+    lineName.placeholder = "LINE 顯示名稱（可留空）";
+    form.append(
+      labeledControl("LINE User ID", lineUserId),
+      labeledControl("LINE 顯示名稱", lineName),
+      button("儲存 LINE 綁定", () => confirmAction(
+        `確定更新「${member.display_name || member.name}」的 LINE 綁定嗎？`,
+        () => runAction("adminSetMemberLineBinding", {
+          memberId: member.member_id,
+          lineUserId: lineUserId.value.trim(),
+          lineDisplayName: lineName.value.trim()
+        })
+      )),
+      button("取消", () => form.remove(), "secondary")
+    );
+    card.appendChild(form);
   }
 
   function renderBindingHistory() {
@@ -193,17 +294,94 @@
     const container = document.getElementById("eventCards");
     container.replaceChildren();
     state.events.forEach(event => {
-      const card = el("article", `manage-card ${event.status === "open" ? "open-card" : ""}`);
+      const card = el("article", `manage-card event-manage-card ${event.status === "open" ? "open-card" : ""}`);
       const info = el("div", "manage-card-info");
-      info.append(el("strong", "", event.name), el("span", "muted", `${displayDate(event.event_date)} · ${statusText(event.status)}`));
+      const term = state.terms.find(item => item.term_id === event.term_id);
+      info.append(
+        el("strong", "", event.name),
+        el("span", "muted", `${displayDate(event.event_date)} · ${term ? term.name : event.term_id} · ${statusText(event.status)}`)
+      );
       const next = event.status === "open" ? "closed" : "open";
-      const action = button(next === "open" ? "開放簽到" : "關閉簽到", () =>
+      const controls = el("div", "manage-card-actions");
+      controls.appendChild(button("查看出席", () => openEventReport(event), "secondary"));
+      controls.appendChild(button("複製查詢連結", () => copyEventReportLink(event), "secondary"));
+      controls.appendChild(button("編輯", () => toggleEventEditForm(event, card), "secondary"));
+      controls.appendChild(button(next === "open" ? "開放簽到" : "關閉簽到", () =>
         confirmAction(`確定要${next === "open" ? "開放" : "關閉"}「${event.name}」嗎？`, () =>
           runAction("adminSetEventStatus", { eventId: event.event_id, status: next })
-        ), next === "closed" ? "danger" : "");
-      card.append(info, action);
+        ), next === "closed" ? "danger" : ""));
+      if (event.status !== "archived") controls.appendChild(button("封存", () =>
+        confirmAction(`確定封存「${event.name}」嗎？`, () =>
+          runAction("adminSetEventStatus", { eventId: event.event_id, status: "archived" })
+        ), "danger"));
+      controls.appendChild(button("永久刪除", () =>
+        confirmAction(`只有完全沒有出席及來賓紀錄時才能刪除。\n確定永久刪除「${event.name}」嗎？`, () =>
+          runAction("adminDeleteEvent", { eventId: event.event_id })
+        ), "danger"));
+      card.append(info, controls);
       container.appendChild(card);
     });
+  }
+
+  function eventReportUrl(event) {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("tab", "reports");
+    url.searchParams.set("termId", event.term_id);
+    url.searchParams.set("eventId", event.event_id);
+    return url.toString();
+  }
+
+  function openEventReport(event) {
+    history.replaceState(null, "", eventReportUrl(event));
+    activateTab("reports");
+    loadAttendanceReport({ termId: event.term_id, eventId: event.event_id })
+      .catch(error => setMessage(message, error.message, true));
+  }
+
+  async function copyEventReportLink(event) {
+    try {
+      await navigator.clipboard.writeText(eventReportUrl(event));
+      setMessage(message, "活動查詢連結已複製。", false);
+    } catch (error) {
+      window.prompt("請複製活動查詢連結", eventReportUrl(event));
+    }
+  }
+
+  function toggleEventEditForm(event, card) {
+    const existing = card.querySelector(".event-edit-form");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    const form = el("div", "inline-form card-inline-form event-edit-form");
+    const name = el("input");
+    name.value = event.name;
+    name.maxLength = 80;
+    const eventDate = el("input");
+    eventDate.type = "date";
+    eventDate.value = dateInputValue(event.event_date);
+    const term = el("select");
+    state.terms.forEach(item => term.appendChild(new Option(item.name, item.term_id, false, item.term_id === event.term_id)));
+    eventDate.addEventListener("change", () => {
+      const suggested = termForDate(eventDate.value);
+      if (suggested) term.value = suggested.term_id;
+    });
+    form.append(
+      labeledControl("活動名稱", name),
+      labeledControl("活動日期", eventDate),
+      labeledControl("年度", term),
+      button("儲存活動", () => confirmAction(`確定更新「${event.name}」嗎？`, () =>
+        runAction("adminUpdateEvent", {
+          eventId: event.event_id,
+          name: name.value.trim(),
+          eventDate: eventDate.value,
+          termId: term.value
+        })
+      )),
+      button("取消", () => form.remove(), "secondary")
+    );
+    card.appendChild(form);
   }
 
   function renderRoles() {
@@ -211,7 +389,12 @@
     document.getElementById("roleTerm").value = termId;
     const container = document.getElementById("roleCards");
     container.replaceChildren();
-    state.members.filter(member => member.status === "active").forEach(member => {
+    state.members.filter(member => member.status === "active").sort((a, b) => {
+      const roleA = state.roles.find(role => role.term_id === termId && role.member_id === a.member_id);
+      const roleB = state.roles.find(role => role.term_id === termId && role.member_id === b.member_id);
+      return Number(roleA ? roleA.sort_order : 999) - Number(roleB ? roleB.sort_order : 999)
+        || String(a.display_name || a.name).localeCompare(String(b.display_name || b.name));
+    }).forEach(member => {
       const existing = state.roles.find(role => role.term_id === termId && role.member_id === member.member_id);
       const card = el("article", "manage-card role-card");
       card.appendChild(el("strong", "", member.display_name || member.name));
@@ -337,6 +520,8 @@
     try {
       controls.forEach(control => control.disabled = true);
       const result = await post({ action, adminToken: adminToken(), ...data });
+      attendanceReport = null;
+      todayAttendanceReport = null;
       await load();
       setMessage(message, result.message || "操作完成", false);
     } catch (error) {
@@ -353,11 +538,42 @@
     document.getElementById(id).classList.toggle("hidden");
   }
 
-  document.getElementById("loginButton").addEventListener("click", () => load().catch(error => setMessage(document.getElementById("loginMessage"), error.message, true)));
+  function activateTab(tabName) {
+    document.querySelectorAll(".tab-button").forEach(item => item.classList.toggle("active", item.dataset.tab === tabName));
+    document.querySelectorAll(".tab-page").forEach(page => page.classList.toggle("active", page.dataset.page === tabName));
+  }
+
+  function dateInputValue(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Taipei",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(date);
+  }
+
+  function termForDate(dateValue) {
+    return state.terms.find(term => {
+      const start = dateInputValue(term.start_date);
+      const end = dateInputValue(term.end_date);
+      return dateValue && start && end && dateValue >= start && dateValue <= end;
+    }) || null;
+  }
+
+  function selectTermForDate(dateInputId, termSelectId) {
+    const term = termForDate(document.getElementById(dateInputId).value);
+    if (term) document.getElementById(termSelectId).value = term.term_id;
+  }
+
+  document.getElementById("loginButton").addEventListener("click", () =>
+    load().then(initializeFromUrl).catch(error => setMessage(document.getElementById("loginMessage"), error.message, true))
+  );
   document.getElementById("refreshButton").addEventListener("click", () => load().catch(error => setMessage(message, error.message, true)));
   document.querySelectorAll(".tab-button").forEach(tab => tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab-button").forEach(item => item.classList.toggle("active", item === tab));
-    document.querySelectorAll(".tab-page").forEach(page => page.classList.toggle("active", page.dataset.page === tab.dataset.tab));
+    activateTab(tab.dataset.tab);
     if (tab.dataset.tab === "reports" && !attendanceReport) {
       loadAttendanceReport().catch(error => setMessage(message, error.message, true));
     }
@@ -375,6 +591,13 @@
   );
   document.getElementById("reportStatusFilter").addEventListener("change", renderReportMembers);
   document.getElementById("reportMemberSearch").addEventListener("input", renderReportMembers);
+  document.getElementById("quickEventDate").addEventListener("change", () => selectTermForDate("quickEventDate", "quickEventTerm"));
+  document.getElementById("eventDate").addEventListener("change", () => selectTermForDate("eventDate", "eventTerm"));
+  document.getElementById("todayReportButton").addEventListener("click", () => {
+    const openEvent = state.events.find(event => event.status === "open");
+    if (openEvent) openEventReport(openEvent);
+    else activateTab("reports");
+  });
   document.getElementById("saveAllRolesButton").addEventListener("click", () => confirmAction(
     "確定儲存目前年度的全部職位設定嗎？",
     () => {
@@ -458,5 +681,14 @@
     sourceTermId: document.getElementById("sourceTerm").value
   }));
 
-  if (tokenInput.value) load().catch(() => {});
+  async function initializeFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "reports") {
+      activateTab("reports");
+      await loadAttendanceReport({ termId: params.get("termId"), eventId: params.get("eventId") });
+    }
+  }
+
+  if (tokenInput.value) load().then(initializeFromUrl).catch(() => {});
+  setInterval(refreshToday, 10000);
 })();
