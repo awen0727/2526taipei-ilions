@@ -4,12 +4,14 @@
   const { config, post, setMessage } = window.ILionsV2;
   const faceMembers = window.ILIONS_FACE_MEMBERS || [];
   const MODEL_URL = "https://vladmandic.github.io/face-api/model/";
+  const FACE_API_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js";
   const MATCH_THRESHOLD = 0.5;
   const SCAN_INTERVAL_MS = 800;
 
   const video = document.getElementById("faceVideo");
+  if (!video) return;
   const videoBox = document.getElementById("faceVideoBox");
-  const message = document.getElementById("message");
+  const message = document.getElementById("faceMessage") || document.getElementById("message");
   const statusBadge = document.getElementById("faceStatusBadge");
   const matchName = document.getElementById("faceMatchName");
   const matchMeta = document.getElementById("faceMatchMeta");
@@ -32,12 +34,33 @@
       .filter(Boolean);
   }
 
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (window.faceapi) {
+        resolve();
+        return;
+      }
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener("error", () => reject(new Error("face-api.js 載入失敗")), { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error("face-api.js 載入失敗，請確認網路連線"));
+      document.head.appendChild(script);
+    });
+  }
+
   async function buildMatcher() {
     if (!faceMembers.length) {
       throw new Error("尚未設定 face-data.js，請先加入會員照片與 memberId");
     }
 
     setStatus("載入模型");
+    await loadScript(FACE_API_URL);
     await Promise.all([
       faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),

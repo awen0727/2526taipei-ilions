@@ -14,8 +14,8 @@
 
 ## 目錄
 
-- `index.html`：新版 LINE 簽到頁
-- `facecheck.html`：人臉輔助簽到頁，與 LINE 簽到並行
+- `index.html`：新版整合簽到頁，同一網址提供 LINE 簽到與人臉輔助簽到
+- `facecheck.html`：舊人臉入口相容頁，會轉往 `index.html#face`
 - `dashboard.html`：新版現場看板
 - `admin.html`：新版管理台
 - `attendance.html`：管理員單場出席狀態與年度出席率查詢
@@ -101,10 +101,10 @@ window.ILIONS_V2_CONFIG = {
 
 ### 6. 設定人臉輔助簽到
 
-人臉簽到是額外入口，不會取代原本 LINE LIFF 簽到。現場可開啟：
+人臉簽到是 `index.html` 內的第二種模式，不會取代原本 LINE LIFF 簽到。現場可開啟：
 
 ```text
-GitHub Pages 網址/v2/facecheck.html
+GitHub Pages 網址/v2/index.html#face
 ```
 
 編輯 `face-data.js`，加入會員照片與 `Members` 工作表的 `member_id`：

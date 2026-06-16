@@ -5,6 +5,7 @@
   const message = document.getElementById("message");
   const RELOGIN_KEY = "ilions-v2-line-relogin-at";
   let idToken = "";
+  let initialized = false;
 
   function show(id) {
     document.getElementById(id).classList.remove("hidden");
@@ -38,6 +39,8 @@
   }
 
   async function initialize() {
+    if (initialized) return;
+    initialized = true;
     try {
       if (!config.liffId || config.liffId.includes("PASTE_")) throw new Error("尚未設定 LIFF ID");
       await liff.init({ liffId: config.liffId });
@@ -116,5 +119,22 @@
     }
   });
 
-  initialize();
+  function setMode(mode) {
+    const isFace = mode === "face";
+    document.getElementById("lineModePanel").classList.toggle("hidden", isFace);
+    document.getElementById("faceModePanel").classList.toggle("hidden", !isFace);
+    document.getElementById("lineModeButton").classList.toggle("active", !isFace);
+    document.getElementById("faceModeButton").classList.toggle("active", isFace);
+    if (isFace) {
+      if (location.hash !== "#face") history.replaceState(null, "", "#face");
+    } else {
+      if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+      initialize();
+    }
+  }
+
+  document.getElementById("lineModeButton").addEventListener("click", () => setMode("line"));
+  document.getElementById("faceModeButton").addEventListener("click", () => setMode("face"));
+
+  setMode(location.hash === "#face" ? "face" : "line");
 })();

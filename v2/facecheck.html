@@ -2,62 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>群愛獅子會人臉輔助簽到</title>
-  <link rel="stylesheet" href="styles.css?v=20260617-1">
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-  <script src="config.js?v=20260616-2"></script>
-  <script src="face-data.js?v=20260617-1"></script>
-  <script src="common.js?v=20260614-2" defer></script>
-  <script src="facecheck.js?v=20260617-1" defer></script>
+  <meta http-equiv="refresh" content="0; url=index.html#face">
+  <title>前往人臉輔助簽到</title>
 </head>
-<body class="face-page">
-  <header class="admin-header">
-    <div>
-      <h1>群愛獅子會人臉輔助簽到</h1>
-      <p>與 LINE 簽到並行，辨識成功後寫入同一份出席紀錄。</p>
-    </div>
-    <a class="header-link" href="index.html">LINE 簽到</a>
-  </header>
-
-  <main>
-    <section class="panel stack">
-      <div class="section-heading">
-        <div>
-          <h2>現場辨識</h2>
-          <p>請使用前鏡頭，辨識到會員後再按確認簽到。</p>
-        </div>
-        <span id="faceStatusBadge" class="badge">初始化</span>
-      </div>
-
-      <div id="faceVideoBox" class="face-video-box">
-        <video id="faceVideo" autoplay muted playsinline></video>
-      </div>
-
-      <div id="faceMatchPanel" class="face-match-panel">
-        <strong id="faceMatchName">尚未辨識到會員</strong>
-        <span id="faceMatchMeta" class="muted">請看向鏡頭，辨識成功後會顯示姓名。</span>
-      </div>
-
-      <div class="grid">
-        <label>攜伴人數
-          <input id="faceGuestCount" type="number" min="0" max="20" value="0">
-        </label>
-        <label>來賓姓名
-          <input id="faceGuestNames" maxlength="200" placeholder="多人請用逗號分隔">
-        </label>
-        <label>備註
-          <input id="faceNote" maxlength="300" placeholder="例如：現場人臉輔助簽到">
-        </label>
-      </div>
-
-      <div class="toolbar">
-        <button id="faceStartButton" type="button">啟動相機辨識</button>
-        <button id="faceCheckinButton" type="button" disabled>確認人臉簽到</button>
-      </div>
-      <div id="message" class="message"></div>
-      <p class="muted">提醒：人臉辨識只是現場輔助工具，照片設定請放在 <code>face-data.js</code>，LINE 簽到功能不受影響。</p>
-    </section>
-  </main>
+<body>
+  <p>正在前往 <a href="index.html#face">人臉輔助簽到</a>...</p>
 </body>
 </html>

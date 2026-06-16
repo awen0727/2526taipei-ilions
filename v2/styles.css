@@ -30,6 +30,7 @@ main { width: min(1100px, calc(100% - 28px)); margin: 22px auto; }
 .face-page main {
   width: min(1920px, calc(100% - clamp(24px, 3vw, 56px)));
 }
+.checkin-page main { width: min(960px, calc(100% - 28px)); }
 .panel {
   margin-bottom: 18px;
   padding: 20px;
@@ -71,6 +72,24 @@ button:disabled { opacity: .55; cursor: wait; }
 .profile img { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
 .toolbar button { width: auto; }
+.mode-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.mode-button {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  color: var(--ink);
+  background: #f7f3e8;
+  text-align: left;
+  border: 2px solid transparent;
+}
+.mode-button strong { font-size: 1.05rem; }
+.mode-button span { color: var(--muted); font-weight: 500; line-height: 1.35; }
+.mode-button.active {
+  color: white;
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.mode-button.active span { color: rgba(255,255,255,.86); }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 9px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
 th { background: #faf6e8; }
@@ -186,6 +205,7 @@ th { background: #faf6e8; }
   th, td { padding: 7px; }
   .admin-header { align-items: flex-start; }
   .header-actions { align-items: stretch; flex-direction: column; }
+  .mode-switch { grid-template-columns: 1fr; }
   .admin-tabs { grid-template-columns: repeat(2, 1fr); }
   .summary-grid { grid-template-columns: 1fr 1fr; }
   .summary-card.featured { grid-column: span 2; }

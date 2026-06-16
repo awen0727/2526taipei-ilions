@@ -4,21 +4,114 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>群愛獅子會電子簽到</title>
-  <link rel="stylesheet" href="styles.css?v=20260616-4">
+  <link rel="stylesheet" href="styles.css?v=20260617-2">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="config.js?v=20260616-2"></script>
+  <script src="face-data.js?v=20260617-1"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="checkin.js?v=20260614-2" defer></script>
+  <script src="checkin.js?v=20260617-1" defer></script>
+  <script src="facecheck.js?v=20260617-2" defer></script>
 </head>
-<body>
-  <header>
-    <h1>群愛獅子會電子簽到</h1>
-    <p>例會與活動出席登記</p>
+<body class="checkin-page">
+  <header class="admin-header">
+    <div>
+      <h1>群愛獅子會電子簽到</h1>
+      <p>同一個網址支援 LINE 簽到與現場人臉輔助簽到</p>
+    </div>
   </header>
   <main>
     <section class="panel stack">
-      <div id="profile" class="profile hidden">
-        <img id="profileImage" alt="LINE 頭像">
+      <div class="mode-switch" aria-label="簽到方式">
+        <button id="lineModeButton" class="mode-button active" type="button">
+          <strong>LINE 會員簽到</strong>
+          <span>會員用自己的 LINE 開啟，系統用 LINE User ID 判斷身分。</span>
+        </button>
+        <button id="faceModeButton" class="mode-button" type="button">
+          <strong>現場人臉輔助</strong>
+          <span>現場設備辨識會員，確認後寫入同一份出席紀錄。</span>
+        </button>
+      </div>
+      <p class="muted">兩種方式共用同一場活動與同一份出席統計；LINE 紀錄來源為 LINE，人臉輔助來源為 FACE。</p>
+    </section>
+
+    <div id="lineModePanel">
+      <section class="panel stack">
+        <div id="profile" class="profile hidden">
+          <img id="profileImage" alt="LINE 頭像">
+          <div>
+            <strong id="lineName"></strong>
+            <div id="memberInfo" class="muted"></div>
+          </div>
+        </div>
+        <div id="eventInfo" class="muted">正在讀取目前活動...</div>
+        <div id="message" class="message"></div>
+      </section>
+
+      <section id="bindingPanel" class="panel stack hidden">
+        <h2>第一次使用：申請會員綁定</h2>
+        <p class="muted">LINE 名稱只供管理員辨識。核准後，系統會使用固定 LINE userId 對應會員。</p>
+        <label>您的會員姓名
+          <input id="claimedName" maxlength="40" autocomplete="name">
+        </label>
+        <button id="bindingButton" type="button">送出綁定申請</button>
+      </section>
+
+      <section id="checkinPanel" class="panel stack hidden">
+        <label>攜伴人數
+          <input id="guestCount" type="number" min="0" max="20" value="0">
+        </label>
+        <label>來賓姓名（多人請用逗號分隔）
+          <input id="guestNames" maxlength="200">
+        </label>
+        <label>備註
+          <textarea id="note" maxlength="300"></textarea>
+        </label>
+        <button id="checkinButton" type="button">確認簽到</button>
+      </section>
+    </div>
+
+    <div id="faceModePanel" class="hidden">
+      <section class="panel stack">
+        <div class="section-heading">
+          <div>
+            <h2>現場人臉輔助簽到</h2>
+            <p>參考人臉 POC 重新整理成正式入口：先辨識、再人工確認、最後寫入同一份 Attendance。</p>
+          </div>
+          <span id="faceStatusBadge" class="badge">未啟動</span>
+        </div>
+
+        <div id="faceVideoBox" class="face-video-box">
+          <video id="faceVideo" autoplay muted playsinline></video>
+        </div>
+
+        <div id="faceMatchPanel" class="face-match-panel">
+          <strong id="faceMatchName">尚未辨識到會員</strong>
+          <span id="faceMatchMeta" class="muted">請先按啟動相機。辨識成功後，工作人員確認姓名再簽到。</span>
+        </div>
+
+        <div class="grid">
+          <label>攜伴人數
+            <input id="faceGuestCount" type="number" min="0" max="20" value="0">
+          </label>
+          <label>來賓姓名
+            <input id="faceGuestNames" maxlength="200" placeholder="多人請用逗號分隔">
+          </label>
+          <label>備註
+            <input id="faceNote" maxlength="300" placeholder="例如：現場人臉輔助簽到">
+          </label>
+        </div>
+
+        <div class="toolbar">
+          <button id="faceStartButton" type="button">啟動相機辨識</button>
+          <button id="faceCheckinButton" type="button" disabled>確認人臉簽到</button>
+        </div>
+        <div id="faceMessage" class="message"></div>
+        <p class="muted">提醒：人臉辨識是現場輔助，不取代人員確認。照片與會員對應請設定在 <code>face-data.js</code>。</p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
         <div>
           <strong id="lineName"></strong>
           <div id="memberInfo" class="muted"></div>
