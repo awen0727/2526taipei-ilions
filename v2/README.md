@@ -15,6 +15,7 @@
 ## 目錄
 
 - `index.html`：新版 LINE 簽到頁
+- `facecheck.html`：人臉輔助簽到頁，與 LINE 簽到並行
 - `dashboard.html`：新版現場看板
 - `admin.html`：新版管理台
 - `attendance.html`：管理員單場出席狀態與年度出席率查詢
@@ -97,6 +98,34 @@ window.ILIONS_V2_CONFIG = {
 ```
 
 注意：放在 GitHub Pages 的 `dashboardToken` 可以被查看，它只能降低意外存取，不能作為真正的私密權限。若現場名單必須完全私密，需要把 Dashboard 移到有登入驗證的服務。
+
+### 6. 設定人臉輔助簽到
+
+人臉簽到是額外入口，不會取代原本 LINE LIFF 簽到。現場可開啟：
+
+```text
+GitHub Pages 網址/v2/facecheck.html
+```
+
+編輯 `face-data.js`，加入會員照片與 `Members` 工作表的 `member_id`：
+
+```js
+window.ILIONS_FACE_MEMBERS = [
+  {
+    label: "Chris Wang",
+    memberId: "M0001",
+    imageUrls: ["faces/chris-wang.jpg"]
+  }
+];
+```
+
+建議做法：
+
+- 每位會員至少放 1 張清楚正面照，光線充足、不要戴墨鏡。
+- `memberId` 建議必填，避免同名或中英文名不同造成誤判。
+- 照片可放在 repo 的 `v2/faces/` 目錄，或使用可公開讀取的 HTTPS 圖片網址。
+- 人臉簽到寫入同一張 `Attendance`，來源 `source` 會標示為 `FACE`；LINE 簽到仍標示為 `LINE`。
+- 人臉辨識適合作為現場輔助工具，正式活動仍建議由工作人員在旁確認畫面辨識姓名。
 
 ## 建議測試流程
 

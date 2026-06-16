@@ -15,7 +15,7 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-16-attendance-records-1";
+const API_VERSION = "2026-06-17-face-checkin-1";
 
 function doGet(e) {
   try {
@@ -53,7 +53,8 @@ function routePost_(payload) {
   const publicActions = {
     getSession: getSession_,
     requestBinding: requestBinding_,
-    checkIn: checkIn_
+    checkIn: checkIn_,
+    faceCheckIn: faceCheckIn_
   };
   const adminActions = {
     adminOverview: adminOverview_,
@@ -505,6 +506,75 @@ function adminManualCheckIn_(payload) {
     });
     audit_("manual_check_in", "admin", memberId, event.event_id);
     return { message: `${memberDisplayName_(member)} 已由管理員完成手動簽到。` };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function faceCheckIn_(payload) {
+  requireDashboardToken_(payload.token);
+  const memberId = cleanText_(payload.memberId || "", 30);
+  const memberName = cleanText_(payload.memberName || "", 80);
+  const guestCount = integer_(payload.guestCount, 0, 20, "攜伴人數");
+  const guestNames = cleanText_(payload.guestNames || "", 200);
+  const note = cleanText_(payload.note || "", 300);
+  const confidence = cleanText_(payload.confidence || "", 30);
+
+  let member = memberId ? findOne_(SHEETS.MEMBERS, "member_id", memberId) : null;
+  if (!member && memberName) {
+    const matches = findRows_(SHEETS.MEMBERS, row => row.status === "active" && memberMatchesName_(row, memberName));
+    if (matches.length > 1) throw new Error(`辨識名稱「${memberName}」對應到多位會員，請在 face-data.js 改用 memberId`);
+    member = matches[0] || null;
+  }
+  if (!member || member.status !== "active") throw new Error("找不到有效會員，請確認 face-data.js 的 memberId 或姓名");
+
+  const event = getOpenEvent_();
+  if (!event) throw new Error("目前沒有開放簽到的活動");
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const duplicate = findRows_(SHEETS.ATTENDANCE, row =>
+      row.event_id === event.event_id && row.member_id === member.member_id
+    )[0];
+    if (duplicate) throw new Error(`${memberDisplayName_(member)} 已完成本次活動簽到`);
+
+    const role = getRole_(event.term_id, member.member_id);
+    const attendanceId = id_("AT");
+    const checkinAt = now_();
+    const finalNote = [note, confidence ? `人臉辨識距離：${confidence}` : ""].filter(Boolean).join("；");
+    append_(SHEETS.ATTENDANCE, {
+      attendance_id: attendanceId,
+      event_id: event.event_id,
+      member_id: member.member_id,
+      name_snapshot: memberDisplayName_(member),
+      role_snapshot: role ? role.position : "會員",
+      checkin_at: checkinAt,
+      source: "FACE",
+      guest_count: guestCount,
+      note: finalNote
+    });
+
+    const names = guestNames.split(/[,，、\n]/).map(name => name.trim()).filter(Boolean);
+    names.slice(0, guestCount).forEach(name => append_(SHEETS.GUESTS, {
+      guest_id: id_("GU"),
+      event_id: event.event_id,
+      host_member_id: member.member_id,
+      name: cleanText_(name, 50),
+      type: "來賓",
+      note: "人臉簽到登記",
+      created_at: now_()
+    }));
+    appendReadableAttendanceRecord_(event, member, role, {
+      attendanceId,
+      source: "FACE",
+      checkinAt,
+      guestCount,
+      guestNames: names.slice(0, guestCount).join("、"),
+      note: finalNote
+    });
+    audit_("face_check_in", "face", member.member_id, event.event_id);
+    return { message: `${memberDisplayName_(member)}，人臉簽到成功！` };
   } finally {
     lock.releaseLock();
   }
