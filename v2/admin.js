@@ -41,6 +41,14 @@
     return label;
   }
 
+  function describedControl(labelText, helpText, control) {
+    const label = el("label", "field-help");
+    label.appendChild(el("span", "field-help-title", labelText));
+    label.appendChild(el("small", "", helpText));
+    label.appendChild(control);
+    return label;
+  }
+
   function selectMembers(selectedId) {
     const select = el("select");
     select.appendChild(new Option("請選擇會員", ""));
@@ -429,7 +437,10 @@
       card.dataset.memberId = member.member_id;
       position.className = "role-position";
       order.className = "role-order";
-      card.append(position, order);
+      card.append(
+        describedControl("職位名稱", "例：會長、秘書、財務；若無職務可填「會員」。", position),
+        describedControl("顯示順序", "數字越小越前面，會影響名單、看板與出席統計排序。", order)
+      );
       container.appendChild(card);
     });
   }
