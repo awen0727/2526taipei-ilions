@@ -32,6 +32,17 @@
     row.appendChild(cell);
   }
 
+  function addMemberLink(row, member) {
+    const cell = document.createElement("td");
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "link-button";
+    link.textContent = member.name;
+    link.addEventListener("click", () => showMemberAttendanceDetail(member));
+    cell.appendChild(link);
+    row.appendChild(cell);
+  }
+
   function fillFilters() {
     const termFilter = document.getElementById("termFilter");
     const eventFilter = document.getElementById("eventFilter");
@@ -57,13 +68,34 @@
     rows.replaceChildren();
     report.members.forEach(member => {
       const row = document.createElement("tr");
-      addCell(row, member.name);
+      addMemberLink(row, member);
       addCell(row, member.position);
       addCell(row, member.attended_count);
       addCell(row, member.absent_count);
       addCell(row, `${member.attendance_rate}%`, member.attendance_rate < 50 ? "rate-low" : "rate-good");
       rows.appendChild(row);
     });
+  }
+
+  function showMemberAttendanceDetail(member) {
+    const panel = document.getElementById("memberAttendanceDetailPanel");
+    const rows = document.getElementById("memberAttendanceDetailRows");
+    document.getElementById("memberAttendanceDetailName").textContent = `${member.name} 出席明細`;
+    rows.replaceChildren();
+    const records = (report.memberEventRecords && report.memberEventRecords[member.member_id]) || [];
+    records.forEach(record => {
+      const row = document.createElement("tr");
+      addCell(row, displayDate(record.event_date));
+      addCell(row, record.event_name);
+      addCell(row, record.attended ? "已出席" : "未出席", record.attended ? "attendance-yes" : "attendance-no");
+      addCell(row, record.checkin_at ? formatDateTime(record.checkin_at) : "");
+      addCell(row, record.source || "");
+      addCell(row, record.guest_count || 0);
+      addCell(row, record.note || "");
+      rows.appendChild(row);
+    });
+    panel.classList.remove("hidden");
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function renderEvent() {
@@ -139,6 +171,9 @@
   }));
   document.getElementById("statusFilter").addEventListener("change", renderEvent);
   document.getElementById("memberSearch").addEventListener("input", renderEvent);
+  document.getElementById("closeMemberAttendanceDetailButton").addEventListener("click", () =>
+    document.getElementById("memberAttendanceDetailPanel").classList.add("hidden")
+  );
 
   if (tokenInput.value) load();
 })();

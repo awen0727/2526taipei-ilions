@@ -441,6 +441,13 @@
     row.appendChild(cell);
   }
 
+  function addReportMemberLink(row, member) {
+    const cell = document.createElement("td");
+    const link = button(member.name, () => showMemberAttendanceDetail(member), "link-button");
+    cell.appendChild(link);
+    row.appendChild(cell);
+  }
+
   function fillReportFilters() {
     const termFilter = document.getElementById("reportTermFilter");
     const eventFilter = document.getElementById("reportEventFilter");
@@ -490,13 +497,34 @@
     summaryRows.replaceChildren();
     report.members.forEach(member => {
       const row = document.createElement("tr");
-      addReportCell(row, member.name);
+      addReportMemberLink(row, member);
       addReportCell(row, member.position);
       addReportCell(row, member.attended_count);
       addReportCell(row, member.absent_count);
       addReportCell(row, `${member.attendance_rate}%`, member.attendance_rate < 50 ? "rate-low" : "rate-good");
       summaryRows.appendChild(row);
     });
+  }
+
+  function showMemberAttendanceDetail(member) {
+    const panel = document.getElementById("memberAttendanceDetailPanel");
+    const rows = document.getElementById("memberAttendanceDetailRows");
+    document.getElementById("memberAttendanceDetailName").textContent = `${member.name} 出席明細`;
+    rows.replaceChildren();
+    const records = (attendanceReport.memberEventRecords && attendanceReport.memberEventRecords[member.member_id]) || [];
+    records.forEach(record => {
+      const row = document.createElement("tr");
+      addReportCell(row, displayDate(record.event_date));
+      addReportCell(row, record.event_name);
+      addReportCell(row, record.attended ? "已出席" : "未出席", record.attended ? "attendance-yes" : "attendance-no");
+      addReportCell(row, record.checkin_at ? formatDateTime(record.checkin_at) : "");
+      addReportCell(row, record.source || "");
+      addReportCell(row, record.guest_count || 0);
+      addReportCell(row, record.note || "");
+      rows.appendChild(row);
+    });
+    panel.classList.remove("hidden");
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function renderReportMembers() {
@@ -609,6 +637,14 @@
   );
   document.getElementById("reportStatusFilter").addEventListener("change", renderReportMembers);
   document.getElementById("reportMemberSearch").addEventListener("input", renderReportMembers);
+  document.getElementById("closeMemberAttendanceDetailButton").addEventListener("click", () =>
+    document.getElementById("memberAttendanceDetailPanel").classList.add("hidden")
+  );
+  document.getElementById("syncAttendanceRecordsButton").addEventListener("click", () =>
+    confirmAction("確定要重建 Google Sheet 的 AttendanceRecords 出席明細嗎？", () =>
+      runAction("adminSyncAttendanceRecords", {})
+    )
+  );
   document.getElementById("quickEventDate").addEventListener("change", () => selectTermForDate("quickEventDate", "quickEventTerm"));
   document.getElementById("eventDate").addEventListener("change", () => selectTermForDate("eventDate", "eventTerm"));
   document.getElementById("todayReportButton").addEventListener("click", () => {

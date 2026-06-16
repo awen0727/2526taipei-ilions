@@ -4,6 +4,7 @@ const SCHEMA = Object.freeze({
   MemberRoles: ["term_id", "member_id", "position", "sort_order"],
   Events: ["event_id", "term_id", "event_date", "name", "status", "created_at"],
   Attendance: ["attendance_id", "event_id", "member_id", "name_snapshot", "role_snapshot", "checkin_at", "source", "guest_count", "note"],
+  AttendanceRecords: ["recorded_at", "event_date", "event_name", "term_id", "member_id", "member_name", "role", "source", "checkin_at", "guest_count", "guest_names", "note", "attendance_id", "event_id"],
   Guests: ["guest_id", "event_id", "host_member_id", "name", "type", "note", "created_at"],
   BindingRequests: ["request_id", "line_user_id", "line_display_name", "claimed_name", "status", "created_at", "resolved_at", "resolved_by"],
   AuditLogs: ["log_id", "action", "actor", "target", "details", "created_at"]

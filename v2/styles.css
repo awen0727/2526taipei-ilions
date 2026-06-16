@@ -50,6 +50,7 @@ button {
   font-weight: 800;
 }
 button.secondary { color: var(--ink); background: #eee; }
+button.link-button { width: auto; padding: 0; border-radius: 0; color: var(--gold); background: transparent; text-align: left; text-decoration: underline; }
 button.danger { background: var(--danger); }
 button:disabled { opacity: .55; cursor: wait; }
 .message { min-height: 24px; white-space: pre-line; font-weight: 700; }

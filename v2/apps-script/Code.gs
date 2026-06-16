@@ -4,6 +4,7 @@ const SHEETS = Object.freeze({
   ROLES: "MemberRoles",
   EVENTS: "Events",
   ATTENDANCE: "Attendance",
+  ATTENDANCE_RECORDS: "AttendanceRecords",
   GUESTS: "Guests",
   BINDINGS: "BindingRequests",
   AUDIT: "AuditLogs"
@@ -14,7 +15,7 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-14-report-role-order-1";
+const API_VERSION = "2026-06-16-attendance-records-1";
 
 function doGet(e) {
   try {
@@ -57,6 +58,7 @@ function routePost_(payload) {
   const adminActions = {
     adminOverview: adminOverview_,
     adminAttendanceReport: adminAttendanceReport_,
+    adminSyncAttendanceRecords: adminSyncAttendanceRecords_,
     adminManualCheckIn: adminManualCheckIn_,
     adminCreateMember: adminCreateMember_,
     adminSetMemberStatus: adminSetMemberStatus_,
@@ -166,13 +168,14 @@ function checkIn_(payload) {
 
     const role = getRole_(event.term_id, member.member_id);
     const attendanceId = id_("AT");
+    const checkinAt = now_();
     append_(SHEETS.ATTENDANCE, {
       attendance_id: attendanceId,
       event_id: event.event_id,
       member_id: member.member_id,
       name_snapshot: memberDisplayName_(member),
       role_snapshot: role ? role.position : "會員",
-      checkin_at: now_(),
+      checkin_at: checkinAt,
       source: "LINE",
       guest_count: guestCount,
       note
@@ -188,6 +191,14 @@ function checkIn_(payload) {
       note: "",
       created_at: now_()
     }));
+    appendReadableAttendanceRecord_(event, member, role, {
+      attendanceId,
+      source: "LINE",
+      checkinAt,
+      guestCount,
+      guestNames: names.slice(0, guestCount).join("、"),
+      note
+    });
     audit_("check_in", member.member_id, event.event_id, attendanceId);
     return { message: `${memberDisplayName_(member)}，簽到成功！` };
   } finally {
@@ -394,6 +405,7 @@ function adminAttendanceReport_(payload) {
     },
     members,
     selectedEventGuests,
+    memberEventRecords: buildMemberEventRecords_(members, events, attendance),
     selectedEventMembers: members.map(member => {
       const record = selectedByMember[member.member_id];
       return {
@@ -410,6 +422,34 @@ function adminAttendanceReport_(payload) {
       || a.name.localeCompare(b.name)
     )
   };
+}
+
+function buildMemberEventRecords_(members, events, attendance) {
+  const recordsByMember = {};
+  members.forEach(member => {
+    recordsByMember[member.member_id] = events.map(event => {
+      const record = attendance.find(row =>
+        row.event_id === event.event_id && row.member_id === member.member_id
+      );
+      return {
+        event_id: event.event_id,
+        event_name: event.name,
+        event_date: event.event_date,
+        attended: Boolean(record),
+        checkin_at: record ? record.checkin_at : "",
+        role_snapshot: record ? record.role_snapshot : member.position,
+        source: record ? record.source : "",
+        guest_count: record ? Number(record.guest_count || 0) : 0,
+        note: record ? record.note : ""
+      };
+    });
+  });
+  return recordsByMember;
+}
+
+function adminSyncAttendanceRecords_() {
+  const count = rebuildReadableAttendanceRecords_();
+  return { message: `已同步 ${count} 筆出席明細到 ${SHEETS.ATTENDANCE_RECORDS} 分頁。` };
 }
 
 function adminManualCheckIn_(payload) {
@@ -432,13 +472,14 @@ function adminManualCheckIn_(payload) {
 
     const role = getRole_(event.term_id, memberId);
     const attendanceId = id_("AT");
+    const checkinAt = now_();
     append_(SHEETS.ATTENDANCE, {
       attendance_id: attendanceId,
       event_id: event.event_id,
       member_id: memberId,
       name_snapshot: memberDisplayName_(member),
       role_snapshot: role ? role.position : "會員",
-      checkin_at: now_(),
+      checkin_at: checkinAt,
       source: "ADMIN",
       guest_count: guestCount,
       note
@@ -454,6 +495,14 @@ function adminManualCheckIn_(payload) {
       note: "管理員手動補登",
       created_at: now_()
     }));
+    appendReadableAttendanceRecord_(event, member, role, {
+      attendanceId,
+      source: "ADMIN",
+      checkinAt,
+      guestCount,
+      guestNames: names.slice(0, guestCount).join("、"),
+      note
+    });
     audit_("manual_check_in", "admin", memberId, event.event_id);
     return { message: `${memberDisplayName_(member)} 已由管理員完成手動簽到。` };
   } finally {
@@ -973,6 +1022,81 @@ function getRole_(termId, memberId) {
 
 function spreadsheet_() {
   return SpreadsheetApp.openById(property_("SPREADSHEET_ID"));
+}
+
+function ensureReadableAttendanceSheet_() {
+  const headers = ["recorded_at", "event_date", "event_name", "term_id", "member_id", "member_name", "role", "source", "checkin_at", "guest_count", "guest_names", "note", "attendance_id", "event_id"];
+  const spreadsheet = spreadsheet_();
+  let sheet = spreadsheet.getSheetByName(SHEETS.ATTENDANCE_RECORDS);
+  if (!sheet) sheet = spreadsheet.insertSheet(SHEETS.ATTENDANCE_RECORDS);
+  const existing = sheet.getLastColumn()
+    ? sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getValues()[0].slice(0, headers.length).map(String)
+    : [];
+  if (existing.join("\t") !== headers.join("\t")) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#fbd050");
+  }
+  return { sheet, headers };
+}
+
+function appendReadableAttendanceRecord_(event, member, role, data) {
+  const { sheet, headers } = ensureReadableAttendanceSheet_();
+  const row = readableAttendanceRecord_(event, member, role, data);
+  sheet.appendRow(headers.map(header => sheetSafe_(row[header] == null ? "" : row[header])));
+}
+
+function rebuildReadableAttendanceRecords_() {
+  const { sheet, headers } = ensureReadableAttendanceSheet_();
+  const attendance = rows_(SHEETS.ATTENDANCE);
+  const events = rows_(SHEETS.EVENTS);
+  const members = rows_(SHEETS.MEMBERS);
+  const guests = rows_(SHEETS.GUESTS);
+  const output = attendance.map(record => {
+    const event = events.find(item => item.event_id === record.event_id) || {};
+    const member = members.find(item => item.member_id === record.member_id) || {};
+    const eventGuests = guests.filter(guest =>
+      guest.event_id === record.event_id && guest.host_member_id === record.member_id
+    );
+    return readableAttendanceRecord_(event, member, null, {
+      attendanceId: record.attendance_id,
+      source: record.source,
+      checkinAt: record.checkin_at,
+      roleSnapshot: record.role_snapshot,
+      guestCount: Number(record.guest_count || 0),
+      guestNames: eventGuests.map(guest => guest.name || "未填姓名來賓").join("、"),
+      note: record.note
+    });
+  }).sort((a, b) =>
+    String(a.event_date).localeCompare(String(b.event_date))
+    || String(a.checkin_at).localeCompare(String(b.checkin_at))
+  );
+  if (sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+  if (output.length) {
+    sheet.getRange(2, 1, output.length, headers.length)
+      .setValues(output.map(row => headers.map(header => sheetSafe_(row[header] == null ? "" : row[header]))));
+  }
+  sheet.autoResizeColumns(1, headers.length);
+  return output.length;
+}
+
+function readableAttendanceRecord_(event, member, role, data) {
+  return {
+    recorded_at: now_(),
+    event_date: storedDateOnly_(event.event_date || ""),
+    event_name: event.name || "",
+    term_id: event.term_id || "",
+    member_id: member.member_id || "",
+    member_name: member.member_id ? memberDisplayName_(member) : "",
+    role: data.roleSnapshot || (role ? role.position : "會員"),
+    source: data.source || "",
+    checkin_at: data.checkinAt || now_(),
+    guest_count: data.guestCount || 0,
+    guest_names: data.guestNames || "",
+    note: data.note || "",
+    attendance_id: data.attendanceId || "",
+    event_id: event.event_id || ""
+  };
 }
 
 function ensureMemberColumns_() {

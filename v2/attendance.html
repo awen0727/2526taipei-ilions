@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>群愛獅子會出席查詢</title>
-  <link rel="stylesheet" href="styles.css?v=20260614-1">
+  <link rel="stylesheet" href="styles.css?v=20260616-1">
   <script src="config.js?v=20260614-6"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="attendance.js?v=20260614-3" defer></script>
+  <script src="attendance.js?v=20260616-1" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -81,12 +81,25 @@
 
       <section class="panel stack">
         <div class="section-heading">
-          <div><h2>年度出席統計</h2><p>依出席場次排序。</p></div>
+          <div><h2>年度出席統計</h2><p>點會員姓名可查看逐場出席狀況。</p></div>
         </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>會員</th><th>年度職位</th><th>出席</th><th>未出席</th><th>出席率</th></tr></thead>
             <tbody id="summaryRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="memberAttendanceDetailPanel" class="panel stack hidden">
+        <div class="section-heading">
+          <div><h2 id="memberAttendanceDetailName">會員出席明細</h2><p>逐場顯示出席或缺席。</p></div>
+          <button id="closeMemberAttendanceDetailButton" class="secondary" type="button">關閉</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>活動日期</th><th>活動名稱</th><th>狀態</th><th>簽到時間</th><th>來源</th><th>攜伴</th><th>備註</th></tr></thead>
+            <tbody id="memberAttendanceDetailRows"></tbody>
           </table>
         </div>
       </section>
