@@ -26,7 +26,7 @@ header p { margin: 5px 0 0; }
 main { width: min(1100px, calc(100% - 28px)); margin: 22px auto; }
 .admin-page main,
 .report-page main {
-  width: min(1480px, calc(100% - clamp(32px, 5vw, 96px)));
+  width: min(1920px, calc(100% - clamp(24px, 3vw, 56px)));
 }
 .panel {
   margin-bottom: 18px;
@@ -145,6 +145,10 @@ th { background: #faf6e8; }
 .attendance-no, .rate-low { color: var(--danger); font-weight: 800; }
 .today-lists { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .today-lists h3 { margin-bottom: 8px; }
+@media (min-width: 1200px) {
+  .admin-page .summary-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .admin-page .report-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (max-width: 640px) {
   main,
   .admin-page main,
