@@ -25,7 +25,8 @@ header h1 { margin: 0; font-size: 1.5rem; }
 header p { margin: 5px 0 0; }
 main { width: min(1100px, calc(100% - 28px)); margin: 22px auto; }
 .admin-page main,
-.report-page main {
+.report-page main,
+.dashboard-page main {
   width: min(1920px, calc(100% - clamp(24px, 3vw, 56px)));
 }
 .panel {
@@ -72,6 +73,7 @@ th { background: #faf6e8; }
 .table-wrap { overflow-x: auto; }
 .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; background: #eee; font-size: .85rem; }
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.dashboard-page .dashboard-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 .person-card { padding: 14px; border-left: 6px solid var(--gold-light); border-radius: 8px; background: #252525; color: white; }
 .person-card .role { color: var(--gold-light); font-size: .9rem; }
 .person-card .name { font-size: 1.45rem; font-weight: 900; }
@@ -148,11 +150,13 @@ th { background: #faf6e8; }
 @media (min-width: 1200px) {
   .admin-page .summary-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .admin-page .report-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .dashboard-page .dashboard-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 }
 @media (max-width: 640px) {
   main,
   .admin-page main,
-  .report-page main { width: min(100% - 18px, 1100px); margin: 12px auto; }
+  .report-page main,
+  .dashboard-page main { width: min(100% - 18px, 1100px); margin: 12px auto; }
   .panel { padding: 15px; }
   th, td { padding: 7px; }
   .admin-header { align-items: flex-start; }
