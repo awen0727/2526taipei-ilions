@@ -15,12 +15,16 @@ const LEGACY_ROSTER = Object.freeze({
   sheetName: "名單"
 });
 
-const API_VERSION = "2026-06-17-face-checkin-1";
+const API_VERSION = "2026-06-17-drive-face-images-1";
 
 function doGet(e) {
   try {
     const action = String((e && e.parameter && e.parameter.action) || "");
     if (action === "health") return json_({ ok: true, ...getHealth_() });
+    if (action === "faceImage") {
+      requireDashboardToken_(e.parameter.token);
+      return json_({ ok: true, apiVersion: API_VERSION, ...getFaceImage_(e.parameter.fileId) });
+    }
     if (action !== "dashboard") throw new Error("不支援的 GET 操作");
     requireDashboardToken_(e.parameter.token);
     return json_({ ok: true, apiVersion: API_VERSION, ...getDashboard_() });
@@ -273,6 +277,20 @@ function getDashboard_() {
     list: memberCards
       .sort((a, b) => Number(a.sort_order || 999) - Number(b.sort_order || 999) || a.name.localeCompare(b.name))
       .concat(guestCards)
+  };
+}
+
+function getFaceImage_(fileId) {
+  const id = cleanText_(fileId || "", 120, "Drive 圖片 ID");
+  const file = DriveApp.getFileById(id);
+  const blob = file.getBlob();
+  const mimeType = blob.getContentType();
+  if (!/^image\//i.test(mimeType)) throw new Error("Drive 檔案不是圖片");
+  const bytes = blob.getBytes();
+  if (bytes.length > 2 * 1024 * 1024) throw new Error("圖片檔案過大，請壓縮到 2MB 以下");
+  return {
+    mimeType,
+    dataUrl: `data:${mimeType};base64,${Utilities.base64Encode(bytes)}`
   };
 }
 

@@ -114,7 +114,7 @@ window.ILIONS_FACE_MEMBERS = [
   {
     label: "Chris Wang",
     memberId: "M0001",
-    imageUrls: ["faces/chris-wang.jpg"]
+    driveFileIds: ["Google Drive 圖片檔案 ID"]
   }
 ];
 ```
@@ -123,7 +123,10 @@ window.ILIONS_FACE_MEMBERS = [
 
 - 每位會員至少放 1 張清楚正面照，光線充足、不要戴墨鏡。
 - `memberId` 建議必填，避免同名或中英文名不同造成誤判。
-- 照片可放在 repo 的 `v2/faces/` 目錄，或使用可公開讀取的 HTTPS 圖片網址。
+- 照片建議放在 Google Drive，再把圖片檔案 ID 填入 `driveFileIds`。
+- Apps Script 會用 `faceImage` 代理讀取 Drive 圖片，所以照片不需要放到 GitHub。
+- 圖片檔案需讓部署 Apps Script 的 Google 帳號可讀取；建議每張壓縮到 2MB 以下。
+- 若只是臨時測試，也可以使用 `imageUrls` 放公開 HTTPS 圖片網址。
 - 人臉簽到寫入同一張 `Attendance`，來源 `source` 會標示為 `FACE`；LINE 簽到仍標示為 `LINE`。
 - 人臉辨識適合作為現場輔助工具，正式活動仍建議由工作人員在旁確認畫面辨識姓名。
 

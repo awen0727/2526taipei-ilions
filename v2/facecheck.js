@@ -28,10 +28,28 @@
     statusBadge.textContent = text;
   }
 
-  function imageUrlsFor(member) {
-    return (member.imageUrls || member.images || [])
-      .map(url => String(url || "").trim())
-      .filter(Boolean);
+  function imageSourcesFor(member) {
+    const urls = (member.imageUrls || member.images || [])
+      .map(url => ({ type: "url", value: String(url || "").trim() }));
+    const driveIds = (member.driveFileIds || member.driveIds || [])
+      .map(fileId => ({ type: "drive", value: String(fileId || "").trim() }));
+    return urls.concat(driveIds).filter(source => source.value);
+  }
+
+  async function driveImageDataUrl(fileId) {
+    const url = new URL(config.apiUrl);
+    url.searchParams.set("action", "faceImage");
+    url.searchParams.set("token", config.dashboardToken);
+    url.searchParams.set("fileId", fileId);
+    const response = await fetch(url);
+    const result = await response.json();
+    if (!result.ok) throw new Error(result.error || "Drive 圖片讀取失敗");
+    return result.dataUrl;
+  }
+
+  async function imageUrlForSource(source) {
+    if (source.type === "drive") return driveImageDataUrl(source.value);
+    return source.value;
   }
 
   function loadScript(src) {
@@ -70,8 +88,9 @@
     const labeled = [];
     for (const member of faceMembers) {
       const descriptions = [];
-      for (const url of imageUrlsFor(member)) {
+      for (const source of imageSourcesFor(member)) {
         try {
+          const url = await imageUrlForSource(source);
           const image = await faceapi.fetchImage(url);
           const detection = await faceapi.detectSingleFace(image).withFaceLandmarks().withFaceDescriptor();
           if (detection) descriptions.push(detection.descriptor);
