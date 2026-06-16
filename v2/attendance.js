@@ -43,6 +43,40 @@
     row.appendChild(cell);
   }
 
+  function selectedEventMemberRecord(member) {
+    if (!report.selectedEvent || !Array.isArray(report.selectedEventMembers)) return null;
+    const selectedMember = report.selectedEventMembers.find(item => item.member_id === member.member_id);
+    if (!selectedMember) return null;
+    return {
+      event_date: report.selectedEvent.event_date,
+      event_name: report.selectedEvent.name,
+      attended: selectedMember.attended,
+      checkin_at: selectedMember.checkin_at,
+      source: selectedMember.source || "",
+      guest_count: selectedMember.guest_count || 0,
+      note: selectedMember.note || ""
+    };
+  }
+
+  function memberAttendanceRecords(member) {
+    const records = (report.memberEventRecords && report.memberEventRecords[member.member_id]) || [];
+    if (records.length) return records;
+
+    const selectedRecord = selectedEventMemberRecord(member);
+    if (selectedRecord) return [selectedRecord];
+    return [];
+  }
+
+  function addEmptyDetailRow(rows, text) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.className = "empty-state";
+    cell.textContent = text;
+    row.appendChild(cell);
+    rows.appendChild(row);
+  }
+
   function fillFilters() {
     const termFilter = document.getElementById("termFilter");
     const eventFilter = document.getElementById("eventFilter");
@@ -82,7 +116,10 @@
     const rows = document.getElementById("memberAttendanceDetailRows");
     document.getElementById("memberAttendanceDetailName").textContent = `${member.name} 出席明細`;
     rows.replaceChildren();
-    const records = (report.memberEventRecords && report.memberEventRecords[member.member_id]) || [];
+    const records = memberAttendanceRecords(member);
+    if (!records.length) {
+      addEmptyDetailRow(rows, "目前沒有此會員的年度活動明細。請確認該年度是否已有活動，或重新整理後再查詢。");
+    }
     records.forEach(record => {
       const row = document.createElement("tr");
       addCell(row, displayDate(record.event_date));

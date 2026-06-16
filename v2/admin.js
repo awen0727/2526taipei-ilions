@@ -448,6 +448,40 @@
     row.appendChild(cell);
   }
 
+  function selectedReportEventMemberRecord(member) {
+    if (!attendanceReport.selectedEvent || !Array.isArray(attendanceReport.selectedEventMembers)) return null;
+    const selectedMember = attendanceReport.selectedEventMembers.find(item => item.member_id === member.member_id);
+    if (!selectedMember) return null;
+    return {
+      event_date: attendanceReport.selectedEvent.event_date,
+      event_name: attendanceReport.selectedEvent.name,
+      attended: selectedMember.attended,
+      checkin_at: selectedMember.checkin_at,
+      source: selectedMember.source || "",
+      guest_count: selectedMember.guest_count || 0,
+      note: selectedMember.note || ""
+    };
+  }
+
+  function reportMemberAttendanceRecords(member) {
+    const records = (attendanceReport.memberEventRecords && attendanceReport.memberEventRecords[member.member_id]) || [];
+    if (records.length) return records;
+
+    const selectedRecord = selectedReportEventMemberRecord(member);
+    if (selectedRecord) return [selectedRecord];
+    return [];
+  }
+
+  function addEmptyReportDetailRow(rows, text) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.className = "empty-state";
+    cell.textContent = text;
+    row.appendChild(cell);
+    rows.appendChild(row);
+  }
+
   function fillReportFilters() {
     const termFilter = document.getElementById("reportTermFilter");
     const eventFilter = document.getElementById("reportEventFilter");
@@ -511,7 +545,10 @@
     const rows = document.getElementById("memberAttendanceDetailRows");
     document.getElementById("memberAttendanceDetailName").textContent = `${member.name} 出席明細`;
     rows.replaceChildren();
-    const records = (attendanceReport.memberEventRecords && attendanceReport.memberEventRecords[member.member_id]) || [];
+    const records = reportMemberAttendanceRecords(member);
+    if (!records.length) {
+      addEmptyReportDetailRow(rows, "目前沒有此會員的年度活動明細。請確認該年度是否已有活動，或重新整理後再查詢。");
+    }
     records.forEach(record => {
       const row = document.createElement("tr");
       addReportCell(row, displayDate(record.event_date));
