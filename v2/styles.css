@@ -23,6 +23,16 @@ header {
 }
 header h1 { margin: 0; font-size: 1.5rem; }
 header p { margin: 5px 0 0; }
+.brand-lockup { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand-avatar {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border: 2px solid rgba(255,255,255,.78);
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 3px 12px rgba(61,43,2,.22);
+}
 main { width: min(1100px, calc(100% - 28px)); margin: 22px auto; }
 .admin-page main,
 .report-page main,
@@ -204,6 +214,7 @@ th { background: #faf6e8; }
   .panel { padding: 15px; }
   th, td { padding: 7px; }
   .admin-header { align-items: flex-start; }
+  .brand-avatar { width: 52px; height: 52px; flex-basis: 52px; border-radius: 14px; }
   .header-actions { align-items: stretch; flex-direction: column; }
   .mode-switch { grid-template-columns: 1fr; }
   .admin-tabs { grid-template-columns: repeat(2, 1fr); }
