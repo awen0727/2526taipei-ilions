@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>群愛獅子會簽到管理台</title>
   <link rel="icon" href="assets/ilions-logo.png">
-  <link rel="stylesheet" href="styles.css?v=20260619-1">
+  <link rel="stylesheet" href="styles.css?v=20260621-admin1">
   <script src="config.js?v=20260616-2"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="admin.js?v=20260616-3" defer></script>
+  <script src="admin.js?v=20260621-admin1" defer></script>
 </head>
 <body class="admin-page">
   <header class="admin-header">
@@ -20,8 +20,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <a class="header-link" href="index.html#face">人臉簽到</a>
-      <button id="refreshButton" class="header-button hidden" type="button">重新整理</button>
+      <a class="header-link" href="index.html" target="_blank" rel="noopener">簽到入口</a>
     </div>
   </header>
 
@@ -37,27 +36,52 @@
     </section>
 
     <div id="adminApp" class="hidden">
-      <nav class="admin-tabs" aria-label="管理功能">
-        <button class="tab-button active" data-tab="today" type="button">今日簽到</button>
-        <button class="tab-button" data-tab="members" type="button">會員管理</button>
-        <button class="tab-button" data-tab="events" type="button">活動紀錄</button>
-        <button class="tab-button" data-tab="roles" type="button">年度職位</button>
-        <button class="tab-button" data-tab="reports" type="button">出席查詢</button>
-      </nav>
+      <section class="admin-command-bar">
+        <div>
+          <strong>群愛簽到管理中心</strong>
+          <span id="adminUpdatedAt" class="muted">登入後顯示最新狀態</span>
+        </div>
+        <div class="admin-command-actions">
+          <a class="button-link secondary-link" href="index.html" target="_blank" rel="noopener">開啟簽到頁</a>
+          <a class="button-link secondary-link" href="dashboard.html" target="_blank" rel="noopener">開啟外部看板</a>
+          <button id="commandRefreshButton" class="secondary" type="button">更新資料</button>
+        </div>
+      </section>
 
-      <div id="message" class="message floating-message"></div>
+      <section class="admin-overview-grid" aria-label="管理摘要">
+        <article class="admin-overview-card event-card">
+          <span>目前活動</span>
+          <strong id="overviewCurrentEvent">尚未開放活動</strong>
+          <small id="overviewCurrentEventDate"></small>
+        </article>
+        <article class="admin-overview-card"><span>在籍會員</span><strong id="overviewActiveMembers">0</strong></article>
+        <article class="admin-overview-card"><span>本場已簽到</span><strong id="overviewAttendance">0</strong></article>
+        <article class="admin-overview-card"><span>本場來賓</span><strong id="overviewGuests">0</strong></article>
+        <article class="admin-overview-card"><span>待核准綁定</span><strong id="overviewPending">0</strong></article>
+      </section>
+
+      <div class="admin-workspace">
+        <nav class="admin-tabs" aria-label="管理功能">
+          <div class="admin-nav-label">日常作業</div>
+          <button class="tab-button active" data-tab="today" type="button"><span>今日簽到</span><small>活動與現場代簽</small></button>
+          <button class="tab-button" data-tab="dashboard" type="button"><span>即時看板</span><small>查看本場出席進度</small></button>
+          <button class="tab-button" data-tab="reports" type="button"><span>出席查詢</span><small>單場與年度統計</small></button>
+          <div class="admin-nav-label">資料設定</div>
+          <button class="tab-button" data-tab="members" type="button"><span>會員管理</span><small>名單與 LINE 綁定</small></button>
+          <button class="tab-button" data-tab="events" type="button"><span>活動紀錄</span><small>建立、編輯與封存</small></button>
+          <button class="tab-button" data-tab="roles" type="button"><span>年度職位</span><small>年度與排序設定</small></button>
+        </nav>
+
+        <div class="admin-content">
+          <div id="message" class="message floating-message"></div>
 
       <section class="tab-page active" data-page="today">
-        <div class="summary-grid">
-          <article class="summary-card featured">
-            <span>目前活動</span>
-            <strong id="currentEventName">尚未建立活動</strong>
-            <small id="currentEventDate"></small>
-            <button id="toggleCurrentEventButton" class="secondary hidden" type="button"></button>
-          </article>
-          <article class="summary-card"><span>已簽到會員</span><strong id="todayMemberCount">0</strong></article>
-          <article class="summary-card"><span>今日來賓</span><strong id="todayGuestCount">0</strong></article>
-          <article class="summary-card"><span>待核准綁定</span><strong id="pendingCount">0</strong></article>
+        <div class="section-heading tab-page-heading">
+          <div>
+            <h2 id="currentEventName">今日簽到</h2>
+            <p id="currentEventDate">建立或管理目前開放的活動。</p>
+          </div>
+          <button id="toggleCurrentEventButton" class="secondary hidden" type="button"></button>
         </div>
 
         <section id="quickEventPanel" class="panel stack">
@@ -119,6 +143,30 @@
           </div>
           <div id="bindingCards" class="card-list"></div>
           <p id="noBindings" class="empty-state">目前沒有待核准申請。</p>
+        </section>
+      </section>
+
+      <section class="tab-page" data-page="dashboard">
+        <section class="panel dashboard-admin-panel stack">
+          <div class="section-heading">
+            <div>
+              <h2 id="adminDashboardEventName">群愛獅子會即時出席</h2>
+              <p id="adminDashboardEventMeta">正在讀取目前活動...</p>
+            </div>
+            <span id="adminDashboardUpdatedAt" class="badge"></span>
+          </div>
+          <section class="dashboard-admin-stats">
+            <article><span>在籍會員</span><strong id="adminDashboardTotal">0</strong></article>
+            <article class="arrived"><span>已出席</span><strong id="adminDashboardAttended">0</strong></article>
+            <article><span>尚未出席</span><strong id="adminDashboardAbsent">0</strong></article>
+            <article class="guest"><span>來賓</span><strong id="adminDashboardGuests">0</strong></article>
+          </section>
+          <div class="attendance-progress" aria-label="即時出席率">
+            <div id="adminDashboardProgress"></div>
+          </div>
+          <p id="adminDashboardRateText" class="muted"></p>
+          <div id="adminDashboardPeople" class="dashboard-grid"></div>
+          <p id="adminDashboardEmpty" class="empty-state">目前尚無簽到紀錄。</p>
         </section>
       </section>
 
@@ -210,6 +258,10 @@
       </section>
 
       <section class="tab-page" data-page="reports">
+        <div class="section-heading report-page-heading">
+          <div><h2>出席查詢</h2><p>查詢單場名單、來賓與年度出席率。</p></div>
+          <button id="exportReportButton" class="secondary" type="button">匯出本場 CSV</button>
+        </div>
         <section class="panel report-filters">
           <label>年度<select id="reportTermFilter"></select></label>
           <label>活動<select id="reportEventFilter"></select></label>
@@ -283,6 +335,8 @@
           </div>
         </section>
       </section>
+        </div>
+      </div>
     </div>
   </main>
 </body>

@@ -102,7 +102,6 @@
     loadTodayAttendanceReport().catch(error => setMessage(message, error.message, true));
     document.getElementById("loginPanel").classList.add("hidden");
     document.getElementById("adminApp").classList.remove("hidden");
-    document.getElementById("refreshButton").classList.remove("hidden");
     setMessage(document.getElementById("loginMessage"), "", false);
     setMessage(message, "", false);
   }
@@ -131,9 +130,7 @@
     const openEvent = state.events.find(event => event.status === "open");
     document.getElementById("currentEventName").textContent = openEvent ? openEvent.name : "目前沒有開放活動";
     document.getElementById("currentEventDate").textContent = openEvent ? displayDate(openEvent.event_date) : "可在下方快速建立";
-    document.getElementById("todayMemberCount").textContent = dashboard.memberCount || 0;
-    document.getElementById("todayGuestCount").textContent = dashboard.guestCount || 0;
-    document.getElementById("pendingCount").textContent = state.bindings.length;
+    document.getElementById("quickEventPanel").classList.toggle("hidden", Boolean(openEvent));
     const toggle = document.getElementById("toggleCurrentEventButton");
     toggle.classList.toggle("hidden", !openEvent);
     if (openEvent) {
@@ -154,6 +151,60 @@
       ? todayAttendanceReport.selectedEventMembers.filter(member => !member.attended && member.member_status === "active")
       : [];
     renderTodayPeople("todayAbsentCards", "noTodayAbsent", absent, person => person.position || "會員");
+    renderAdminOverview(dashboard);
+    renderAdminDashboard(dashboard);
+  }
+
+  function renderAdminOverview(dashboard) {
+    const openEvent = state.events.find(event => event.status === "open");
+    const activeMembers = state.members.filter(member => member.status === "active").length;
+    document.getElementById("overviewCurrentEvent").textContent = openEvent ? openEvent.name : "尚未開放活動";
+    document.getElementById("overviewCurrentEventDate").textContent = openEvent ? displayDate(openEvent.event_date) : "請到今日簽到或活動紀錄建立活動";
+    document.getElementById("overviewActiveMembers").textContent = activeMembers;
+    document.getElementById("overviewAttendance").textContent = dashboard.memberCount || 0;
+    document.getElementById("overviewGuests").textContent = dashboard.guestCount || 0;
+    document.getElementById("overviewPending").textContent = state.bindings.length;
+    document.getElementById("adminUpdatedAt").textContent = `最後更新：${formatDateTime(new Date().toISOString())}`;
+  }
+
+  function renderAdminDashboard(dashboard) {
+    const openEvent = state.events.find(event => event.status === "open");
+    const activeTotal = state.members.filter(member => member.status === "active").length;
+    const people = dashboard.list || [];
+    const members = people.filter(person => person.type === "member");
+    const guests = people.filter(person => person.type === "guest");
+    const absent = todayAttendanceReport
+      ? todayAttendanceReport.selectedEventMembers.filter(member => !member.attended && member.member_status === "active").length
+      : Math.max(0, activeTotal - members.length);
+    const rate = activeTotal ? Math.round(members.length / activeTotal * 1000) / 10 : 0;
+
+    document.getElementById("adminDashboardEventName").textContent = openEvent ? openEvent.name : "目前沒有開放活動";
+    document.getElementById("adminDashboardEventMeta").textContent = openEvent
+      ? `${displayDate(openEvent.event_date)} · 每 10 秒自動更新`
+      : "開放活動後，此處會顯示即時出席進度。";
+    document.getElementById("adminDashboardUpdatedAt").textContent = `更新 ${new Intl.DateTimeFormat("zh-TW", { timeStyle: "short" }).format(new Date())}`;
+    document.getElementById("adminDashboardTotal").textContent = activeTotal;
+    document.getElementById("adminDashboardAttended").textContent = members.length;
+    document.getElementById("adminDashboardAbsent").textContent = absent;
+    document.getElementById("adminDashboardGuests").textContent = guests.length;
+    document.getElementById("adminDashboardProgress").style.width = `${Math.min(100, rate)}%`;
+    document.getElementById("adminDashboardRateText").textContent = `會員出席率 ${rate}%`;
+
+    const container = document.getElementById("adminDashboardPeople");
+    container.replaceChildren();
+    people.forEach(person => {
+      const card = el("article", `person-card ${person.type === "guest" ? "guest-card" : "member-card"}`);
+      card.append(
+        el("div", "role", person.position || (person.type === "guest" ? "來賓" : "會員")),
+        el("div", "name", person.name)
+      );
+      const detail = person.type === "guest" && person.host_name
+        ? `介紹會員：${person.host_name}`
+        : person.checkin_at ? `簽到：${formatDateTime(person.checkin_at)}` : "";
+      if (detail) card.appendChild(el("div", "card-detail", detail));
+      container.appendChild(card);
+    });
+    document.getElementById("adminDashboardEmpty").classList.toggle("hidden", people.length > 0);
   }
 
   function fillManualCheckinMembers() {
@@ -635,6 +686,47 @@
   function activateTab(tabName) {
     document.querySelectorAll(".tab-button").forEach(item => item.classList.toggle("active", item.dataset.tab === tabName));
     document.querySelectorAll(".tab-page").forEach(page => page.classList.toggle("active", page.dataset.page === tabName));
+    const url = new URL(window.location.href);
+    if (tabName === "today") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", tabName);
+    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function csvCell(value) {
+    const text = String(value == null ? "" : value);
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  }
+
+  function exportAttendanceCsv() {
+    if (!attendanceReport || !attendanceReport.selectedEvent) {
+      setMessage(message, "請先選擇要匯出的活動", true);
+      return;
+    }
+    const eventId = attendanceReport.selectedEvent.event_id;
+    const rows = [["狀態", "會員", "年度職位", "簽到時間", "來源", "攜伴", "備註"]];
+    attendanceReport.selectedEventMembers.forEach(member => {
+      const detail = ((attendanceReport.memberEventRecords || {})[member.member_id] || [])
+        .find(record => record.event_id === eventId) || {};
+      rows.push([
+        member.attended ? "已出席" : "未出席",
+        member.name,
+        member.role_snapshot || member.position,
+        member.checkin_at ? formatDateTime(member.checkin_at) : "",
+        detail.source || "",
+        member.guest_count || 0,
+        member.note || ""
+      ]);
+    });
+    const csv = `\ufeff${rows.map(row => row.map(csvCell).join(",")).join("\n")}`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${dateInputValue(attendanceReport.selectedEvent.event_date)}-${attendanceReport.selectedEvent.name.replace(/[\\/:*?"<>|]/g, "-")}-出席名單.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    setMessage(message, "本場出席 CSV 已建立。", false);
   }
 
   function dateInputValue(value) {
@@ -665,7 +757,7 @@
   document.getElementById("loginButton").addEventListener("click", () =>
     load().then(initializeFromUrl).catch(error => setMessage(document.getElementById("loginMessage"), error.message, true))
   );
-  document.getElementById("refreshButton").addEventListener("click", () => load().catch(error => setMessage(message, error.message, true)));
+  document.getElementById("commandRefreshButton").addEventListener("click", () => load().catch(error => setMessage(message, error.message, true)));
   document.querySelectorAll(".tab-button").forEach(tab => tab.addEventListener("click", () => {
     activateTab(tab.dataset.tab);
     if (tab.dataset.tab === "reports" && !attendanceReport) {
@@ -693,6 +785,7 @@
       runAction("adminSyncAttendanceRecords", {})
     )
   );
+  document.getElementById("exportReportButton").addEventListener("click", exportAttendanceCsv);
   document.getElementById("quickEventDate").addEventListener("change", () => selectTermForDate("quickEventDate", "quickEventTerm"));
   document.getElementById("eventDate").addEventListener("change", () => selectTermForDate("eventDate", "eventTerm"));
   document.getElementById("todayReportButton").addEventListener("click", () => {
@@ -801,6 +894,8 @@
     if (params.get("tab") === "reports") {
       activateTab("reports");
       await loadAttendanceReport({ termId: params.get("termId"), eventId: params.get("eventId") });
+    } else if (["today", "dashboard", "members", "events", "roles"].includes(params.get("tab"))) {
+      activateTab(params.get("tab"));
     }
   }
 
