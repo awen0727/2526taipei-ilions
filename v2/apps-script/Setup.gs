@@ -3,6 +3,7 @@ const SCHEMA = Object.freeze({
   Terms: ["term_id", "name", "start_date", "end_date", "status"],
   MemberRoles: ["term_id", "member_id", "position", "sort_order"],
   Events: ["event_id", "term_id", "event_date", "name", "status", "created_at"],
+  EventRegistrations: ["registration_id", "event_id", "member_id", "name_snapshot", "role_snapshot", "status", "registered_at", "canceled_at", "source"],
   Attendance: ["attendance_id", "event_id", "member_id", "name_snapshot", "role_snapshot", "checkin_at", "source", "guest_count", "note"],
   AttendanceRecords: ["recorded_at", "event_date", "event_name", "term_id", "member_id", "member_name", "role", "source", "checkin_at", "guest_count", "guest_names", "note", "attendance_id", "event_id"],
   Guests: ["guest_id", "event_id", "host_member_id", "name", "type", "note", "created_at"],

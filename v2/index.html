@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>群愛獅子會電子簽到</title>
   <link rel="icon" href="assets/ilions-logo.png">
-  <link rel="stylesheet" href="styles.css?v=20260619-1">
+  <link rel="stylesheet" href="styles.css?v=20260627-registration1">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="config.js?v=20260616-2"></script>
   <script src="face-data.js?v=20260617-2"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="checkin.js?v=20260617-1" defer></script>
+  <script src="checkin.js?v=20260627-registration1" defer></script>
   <script src="facecheck.js?v=20260617-3" defer></script>
 </head>
 <body class="checkin-page">
@@ -72,6 +72,17 @@
         </label>
         <button id="checkinButton" type="button">確認簽到</button>
       </section>
+
+      <section id="registrationPanel" class="panel stack hidden">
+        <div class="section-heading">
+          <div>
+            <h2>活動報名</h2>
+            <p>可先報名未來活動；報名資料會獨立記錄，不會影響正式簽到。</p>
+          </div>
+        </div>
+        <p id="noRegistrationEvents" class="empty-state">目前沒有可報名的活動。</p>
+        <div id="registrationList" class="registration-list"></div>
+      </section>
     </div>
 
     <div id="faceModePanel" class="hidden">
@@ -113,39 +124,6 @@
         <p class="muted">提醒：人臉辨識是現場輔助，不取代人員確認。照片與會員對應請設定在 <code>face-data.js</code>。</p>
       </section>
     </div>
-  </main>
-</body>
-</html>
-        <div>
-          <strong id="lineName"></strong>
-          <div id="memberInfo" class="muted"></div>
-        </div>
-      </div>
-      <div id="eventInfo" class="muted">正在讀取目前活動...</div>
-      <div id="message" class="message"></div>
-    </section>
-
-    <section id="bindingPanel" class="panel stack hidden">
-      <h2>第一次使用：申請會員綁定</h2>
-      <p class="muted">LINE 名稱只供管理員辨識。核准後，系統會使用固定 LINE userId 對應會員。</p>
-      <label>您的會員姓名
-        <input id="claimedName" maxlength="40" autocomplete="name">
-      </label>
-      <button id="bindingButton" type="button">送出綁定申請</button>
-    </section>
-
-    <section id="checkinPanel" class="panel stack hidden">
-      <label>攜伴人數
-        <input id="guestCount" type="number" min="0" max="20" value="0">
-      </label>
-      <label>來賓姓名（多人請用逗號分隔）
-        <input id="guestNames" maxlength="200">
-      </label>
-      <label>備註
-        <textarea id="note" maxlength="300"></textarea>
-      </label>
-      <button id="checkinButton" type="button">確認簽到</button>
-    </section>
   </main>
 </body>
 </html>

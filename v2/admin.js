@@ -376,11 +376,12 @@
       const term = state.terms.find(item => item.term_id === event.term_id);
       info.append(
         el("strong", "", event.name),
-        el("span", "muted", `${displayDate(event.event_date)} · ${term ? term.name : event.term_id} · ${statusText(event.status)}`)
+        el("span", "muted", `${displayDate(event.event_date)} · ${term ? term.name : event.term_id} · ${statusText(event.status)} · 報名 ${event.registration_count || 0}`)
       );
       const next = event.status === "open" ? "closed" : "open";
       const controls = el("div", "manage-card-actions");
       controls.appendChild(button("查看出席", () => openEventReport(event), "secondary"));
+      controls.appendChild(button("查看報名", () => openEventReport(event), "secondary"));
       controls.appendChild(button("複製查詢連結", () => copyEventReportLink(event), "secondary"));
       controls.appendChild(button("編輯", () => toggleEventEditForm(event, card), "secondary"));
       controls.appendChild(button(next === "open" ? "開放簽到" : "關閉簽到", () =>
@@ -571,8 +572,22 @@
     const event = report.selectedEvent;
     document.getElementById("reportSelectedEventName").textContent = event ? event.name : "本年度尚無活動";
     document.getElementById("reportSelectedEventMeta").textContent = event ? displayDate(event.event_date) : "";
-    document.getElementById("reportSelectedEventBadge").textContent = event ? `出席 ${event.member_count}｜來賓 ${event.guest_count}` : "";
+    document.getElementById("reportSelectedEventBadge").textContent = event ? `報名 ${event.registration_count || 0}｜出席 ${event.member_count}｜來賓 ${event.guest_count}` : "";
     renderReportMembers();
+
+    const registrationRows = document.getElementById("reportRegistrationRows");
+    const registrations = report.selectedEventRegistrations || [];
+    registrationRows.replaceChildren();
+    document.getElementById("reportRegistrationBadge").textContent = `${registrations.length} 位`;
+    document.getElementById("reportNoRegistrations").classList.toggle("hidden", registrations.length > 0);
+    registrations.forEach(item => {
+      const row = document.createElement("tr");
+      addReportCell(row, item.name);
+      addReportCell(row, item.position || "會員");
+      addReportCell(row, item.registered_at ? formatDateTime(item.registered_at) : "");
+      addReportCell(row, item.source || "");
+      registrationRows.appendChild(row);
+    });
 
     const guestRows = document.getElementById("reportGuestRows");
     const guests = report.selectedEventGuests || [];

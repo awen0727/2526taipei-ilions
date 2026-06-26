@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>群愛獅子會簽到管理台</title>
   <link rel="icon" href="assets/ilions-logo.png">
-  <link rel="stylesheet" href="styles.css?v=20260621-admin1">
+  <link rel="stylesheet" href="styles.css?v=20260627-registration1">
   <script src="config.js?v=20260616-2"></script>
   <script src="common.js?v=20260614-2" defer></script>
-  <script src="admin.js?v=20260621-admin1" defer></script>
+  <script src="admin.js?v=20260627-registration1" defer></script>
 </head>
 <body class="admin-page">
   <header class="admin-header">
@@ -220,7 +220,7 @@
       <section class="tab-page" data-page="events">
         <section class="panel stack">
           <div class="section-heading">
-            <div><h2>活動紀錄</h2><p>同一時間只會開放一場活動。</p></div>
+            <div><h2>活動紀錄</h2><p>同一時間只會開放一場活動；也可查看會員預先報名名單。</p></div>
             <button id="showCreateEventButton" type="button">建立活動</button>
           </div>
           <div id="createEventForm" class="inline-form hidden">
@@ -229,7 +229,7 @@
             <label>年度<select id="eventTerm"></select></label>
             <button id="createEventButton" type="button">建立並開放</button>
           </div>
-          <p class="muted">活動日期會自動對應年度；已有出席紀錄的活動只能封存，不能永久刪除。</p>
+          <p class="muted">活動日期會自動對應年度；已有報名、出席或來賓紀錄的活動只能封存，不能永久刪除。</p>
           <div id="eventCards" class="card-list"></div>
         </section>
       </section>
@@ -293,6 +293,20 @@
               <tbody id="reportEventRows"></tbody>
             </table>
           </div>
+        </section>
+
+        <section id="reportRegistrationPanel" class="panel stack">
+          <div class="section-heading">
+            <div><h2>本場報名名單</h2><p>會員預先報名紀錄，方便和實際出席互相對照。</p></div>
+            <span id="reportRegistrationBadge" class="badge"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>會員</th><th>職位</th><th>報名時間</th><th>來源</th></tr></thead>
+              <tbody id="reportRegistrationRows"></tbody>
+            </table>
+          </div>
+          <p id="reportNoRegistrations" class="empty-state hidden">本次活動沒有預先報名紀錄。</p>
         </section>
 
         <section class="panel stack">

@@ -105,6 +105,19 @@ th, td { padding: 9px; border-bottom: 1px solid #ddd; text-align: left; vertical
 th { background: #faf6e8; }
 .table-wrap { overflow-x: auto; }
 .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; background: #eee; font-size: .85rem; }
+.success-badge { color: white; background: var(--success); }
+.registration-list { display: grid; gap: 10px; }
+.registration-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e2d7b4;
+  border-radius: 10px;
+  background: #fffdf5;
+}
+.registration-card button { width: auto; white-space: nowrap; }
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 .dashboard-page .dashboard-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 .person-card { padding: 14px; border-left: 6px solid var(--gold-light); border-radius: 8px; background: #252525; color: white; }
@@ -292,8 +305,8 @@ th { background: #faf6e8; }
   .tab-button small { display: none; }
   .summary-grid { grid-template-columns: 1fr 1fr; }
   .summary-card.featured { grid-column: span 2; }
-  .section-heading, .manage-card, .manage-card-actions { align-items: stretch; flex-direction: column; }
-  .section-heading button, .manage-card button { width: 100%; }
+  .section-heading, .manage-card, .manage-card-actions, .registration-card { align-items: stretch; flex-direction: column; }
+  .section-heading button, .manage-card button, .registration-card button { width: 100%; }
   .role-card { grid-template-columns: 1fr; }
   .sticky-save-bar { align-items: stretch; flex-direction: column; }
   .sticky-save-bar button { width: 100%; }

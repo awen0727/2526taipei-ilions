@@ -38,6 +38,66 @@
     }
   }
 
+  function formatEventDate(value) {
+    if (!value) return "";
+    const date = new Date(`${String(value).slice(0, 10)}T00:00:00+08:00`);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat("zh-TW", {
+      timeZone: "Asia/Taipei",
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short"
+    }).format(date);
+  }
+
+  function renderRegistrationEvents(events) {
+    const panel = document.getElementById("registrationPanel");
+    const list = document.getElementById("registrationList");
+    const empty = document.getElementById("noRegistrationEvents");
+    if (!panel || !list || !empty) return;
+    list.replaceChildren();
+    panel.classList.remove("hidden");
+    empty.classList.toggle("hidden", events.length > 0);
+    events.forEach(item => {
+      const card = document.createElement("article");
+      card.className = "registration-card";
+
+      const info = document.createElement("div");
+      info.className = "manage-card-info";
+      const title = document.createElement("strong");
+      title.textContent = item.name || "未命名活動";
+      const meta = document.createElement("span");
+      meta.className = "muted";
+      meta.textContent = `${formatEventDate(item.event_date)} · ${item.registered ? "已報名" : "尚未報名"}`;
+      const badge = document.createElement("span");
+      badge.className = item.registered ? "badge success-badge" : "badge";
+      badge.textContent = item.registered ? "已報名" : "可報名";
+      info.append(title, meta, badge);
+
+      const actionButton = document.createElement("button");
+      actionButton.type = "button";
+      actionButton.className = item.registered ? "secondary" : "";
+      actionButton.textContent = item.registered ? "取消報名" : "我要報名";
+      actionButton.addEventListener("click", async () => {
+        try {
+          actionButton.disabled = true;
+          const action = item.registered ? "cancelRegistration" : "registerEvent";
+          const result = await post({ action, idToken, eventId: item.event_id });
+          setMessage(message, result.message, false);
+          const session = await loadSession();
+          if (session) renderRegistrationEvents(session.registrationEvents || []);
+        } catch (error) {
+          setMessage(message, error.message, true);
+        } finally {
+          actionButton.disabled = false;
+        }
+      });
+
+      card.append(info, actionButton);
+      list.appendChild(card);
+    });
+  }
+
   async function initialize() {
     if (initialized) return;
     initialized = true;
@@ -76,6 +136,7 @@
 
       document.getElementById("memberInfo").textContent =
         `${session.member.name}｜${session.member.position || "會員"}`;
+      renderRegistrationEvents(session.registrationEvents || []);
       if (session.event && !session.alreadyCheckedIn) show("checkinPanel");
       setMessage(message, session.alreadyCheckedIn ? "您已完成本次活動簽到。" : "", false);
     } catch (error) {
